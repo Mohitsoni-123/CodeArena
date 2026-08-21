@@ -4,6 +4,7 @@ import "dotenv/config"
 
 import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
+import authMiddleware from './middleware/authMiddleware.js';
 
 
 const app = express();
@@ -19,6 +20,12 @@ connectDB();
 
 
 app.use("/api/auth",authRoutes);
+app.get("/api/auth/me", authMiddleware, (req, res)=>{
+    res.json({
+        message: "You are authenticated",
+        user: req.user
+    });
+})
 
 
 
