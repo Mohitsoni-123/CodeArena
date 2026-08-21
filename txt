@@ -1,0 +1,10 @@
+zZgaKtkAD60qyvtx
+mohitmohitsoni2006_db_user
+mongodb+srv://mohitmohitsoni2006_db_user:zZgaKtkAD60qyvtx@cluster0.8yurvjl.mongodb.net/
+
+
+mohitsonikadel2006_db_user
+yui8m0S6yZNFSIdZ
+
+
+Xqs33heg0H2FBzZ7
