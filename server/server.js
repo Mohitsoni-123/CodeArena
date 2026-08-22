@@ -6,6 +6,8 @@ import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import authMiddleware from './middleware/authMiddleware.js';
 import adminMiddleware from './middleware/adminMiddleware.js';
+import problemRoutes from "./routes/problemRoutes.js";
+
 
 
 const app = express();
@@ -21,6 +23,7 @@ connectDB();
 
 
 app.use("/api/auth",authRoutes);
+app.use("/api/problems", problemRoutes);
 app.get("/api/auth/me", authMiddleware, (req, res)=>{
     res.json({
         message: "You are authenticated",

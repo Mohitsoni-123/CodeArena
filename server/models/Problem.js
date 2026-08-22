@@ -38,11 +38,11 @@ const problemSchema = new mongoose.Schema(
         ],
         constraints: [
             {
-                trpe: String
+                type: String
             }
         ],
         starterCode: {
-            typr: String,
+            type: String,
             default: ""
         },
         testCases: [
