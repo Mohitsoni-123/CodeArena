@@ -60,7 +60,7 @@ export const login = async(req, res)=>{
                 message: "Invalid email or password"
             });
         }
-        const isPasswordCorrect = bcrypt.compare(password, user.hashedPassword);
+        const isPasswordCorrect = await bcrypt.compare(password, user.password);
 
         if(!isPasswordCorrect){
             return res.status(401).json({

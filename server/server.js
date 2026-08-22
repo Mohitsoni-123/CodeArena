@@ -5,6 +5,7 @@ import "dotenv/config"
 import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import authMiddleware from './middleware/authMiddleware.js';
+import adminMiddleware from './middleware/adminMiddleware.js';
 
 
 const app = express();
@@ -26,6 +27,17 @@ app.get("/api/auth/me", authMiddleware, (req, res)=>{
         user: req.user
     });
 })
+
+app.get(
+    "/api/admin/test",
+    authMiddleware,
+    adminMiddleware,
+    (req, res) => {
+        res.json({
+            message: "Welcome Admin 👑"
+        });
+    }
+);
 
 
 
