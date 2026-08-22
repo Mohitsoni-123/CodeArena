@@ -42,3 +42,27 @@ export const getProblems = async (req, res)=>{
 }
 
 
+export const getProblemById = async (req, res)=>{
+    try{
+
+        const problem = await Problem.findById(req.params.id).select("-testCases");
+
+        if(!problem){
+            return res.status(404).json({
+                message: "Problem not found"
+            });
+        }
+        res.status(200).json({
+            problem
+        })
+    }catch(error){
+        console.error("Get Problem Error:", error.message);
+        res.status(500).json({
+            message: "Server error"
+        });
+    }
+}
+
+export const updateProblem = async(req, res)=>{
+    
+}
