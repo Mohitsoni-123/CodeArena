@@ -64,5 +64,24 @@ export const getProblemById = async (req, res)=>{
 }
 
 export const updateProblem = async(req, res)=>{
-    
+    try {
+        const problem = await Problem.findByIdAndUpdate(req.params.id, req.body,{
+            new: true,
+            runValidators: true
+        });
+        if(!problem){
+            return res.status(404).json({
+                message: "Problem not found"
+            });
+        }
+        res.status(200).json({
+            message: "Problem update successfully",
+            problem
+        })
+    } catch (error) {
+        console.error("Update Problem Error:", error.message);
+        res.status(500).json({
+            message: "Server error"
+        })
+    }
 }
