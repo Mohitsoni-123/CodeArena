@@ -7,6 +7,7 @@ import authRoutes from './routes/authRoutes.js';
 import authMiddleware from './middleware/authMiddleware.js';
 import adminMiddleware from './middleware/adminMiddleware.js';
 import problemRoutes from "./routes/problemRoutes.js";
+import submissionRoutes from "./routes/submissionRoutes.js";
 
 
 
@@ -24,6 +25,7 @@ connectDB();
 
 app.use("/api/auth",authRoutes);
 app.use("/api/problems", problemRoutes);
+app.use("/api/submissions", submissionRoutes)
 app.get("/api/auth/me", authMiddleware, (req, res)=>{
     res.json({
         message: "You are authenticated",
