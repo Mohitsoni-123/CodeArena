@@ -26,7 +26,7 @@ export const createSubmission = async (req, res)=>{
             problem: problemId,
             language,
             code,
-            status: "Panding",
+            status: "Pending",
             totalTestCases: problem.testCases.length
         });
         res.status(201).json({
