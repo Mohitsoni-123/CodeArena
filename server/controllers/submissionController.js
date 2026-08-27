@@ -4,7 +4,7 @@ import { executeCode } from "../services/jdoodleService.js";
 
 export const createSubmission = async (req, res) => {
     try {
-        const { problemId, language, code, stdin = "" } = req.body;
+        const { problemId, language, code } = req.body;
 
         // Check required fields
         if (!problemId || !language || !code) {
@@ -22,40 +22,79 @@ export const createSubmission = async (req, res) => {
             });
         }
 
-        // Execute code using JDoodle
-        const result = await executeCode({
-            language,
-            code,
-            stdin
-        });
+        let passedTestCases = 0;
+        const testCaseResults = [];
 
-        // Decide status
+        // Run code for every test case
+        for (const testCase of problem.testCases) {
+
+            const result = await executeCode({
+                language,
+                code,
+                stdin: testCase.input
+            });
+
+            const actualOutput = (result.output || "").trim();
+            const expectedOutput = testCase.expectedOutput.trim();
+
+            const passed =
+                result.statusCode === 200 &&
+                actualOutput === expectedOutput;
+
+            if (passed) {
+                passedTestCases++;
+            }
+
+            testCaseResults.push({
+                input: testCase.isHidden
+                    ? "Hidden Test Case"
+                    : testCase.input,
+
+                expectedOutput: testCase.isHidden
+                    ? "Hidden"
+                    : expectedOutput,
+
+                actualOutput: testCase.isHidden
+                    ? "Hidden"
+                    : actualOutput,
+
+                passed
+            });
+        }
+
+        // Final status
         const status =
-            result.statusCode === 200 ? "Accepted" : "Error";
+            passedTestCases === problem.testCases.length
+                ? "Accepted"
+                : "Wrong Answer";
 
-        // Create submission
+        // Save submission
         const submission = await Submission.create({
             user: req.user.userId,
             problem: problemId,
             language,
             code,
             status,
-            totalTestCases: problem.testCases.length
+            totalTestCases: problem.testCases.length,
+            testCasesPassed: passedTestCases,
         });
 
-        res.status(201).json({
-            message: "Code executed successfully",
-            submission,
-            result
+        return res.status(201).json({
+            message: "Submission evaluated successfully",
+            status,
+            passedTestCases,
+            totalTestCases: problem.testCases.length,
+            testCaseResults,
+            submission
         });
 
     } catch (error) {
         console.error(
-            "Create Submission Error:",
+            "Submission Error:",
             error.response?.data || error.message
         );
 
-        res.status(500).json({
+        return res.status(500).json({
             message: "Code execution failed",
             error: error.response?.data || error.message
         });

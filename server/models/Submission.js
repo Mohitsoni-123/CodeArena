@@ -44,6 +44,10 @@ const submissionSchema = new mongoose.Schema(
             type: Number,
             default: 0
         },
+        totalTestCases: {
+    type: Number,
+    default: 0
+},
         error: {
             type: String,
             default: ""
