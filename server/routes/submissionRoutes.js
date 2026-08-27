@@ -1,5 +1,5 @@
 import express from "express"
-import { createSubmission } from "../controllers/submissionController.js";
+import { createSubmission, runCode  } from "../controllers/submissionController.js";
 import authMiddleware from "../middleware/authMiddleware.js"
 
 const router = express.Router();
@@ -13,6 +13,7 @@ const router = express.Router();
 
 
 
+router.post("/run", authMiddleware, runCode);
 
 router.post("/", authMiddleware, createSubmission);
 

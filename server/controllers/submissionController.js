@@ -100,3 +100,44 @@ export const createSubmission = async (req, res) => {
         });
     }
 };
+
+
+export const runCode = async (req, res) => {
+    try {
+        const { language, code, stdin = "" } = req.body;
+
+        // Check required fields
+        if (!language || !code) {
+            return res.status(400).json({
+                message: "Language and code are required"
+            });
+        }
+
+        // Execute code using JDoodle
+        const result = await executeCode({
+            language,
+            code,
+            stdin
+        });
+
+        return res.status(200).json({
+            message: "Code executed successfully",
+            output: result.output || "",
+            statusCode: result.statusCode,
+            cpuTime: result.cpuTime,
+            memory: result.memory,
+            error: result.error || ""
+        });
+
+    } catch (error) {
+        console.error(
+            "Run Code Error:",
+            error.response?.data || error.message
+        );
+
+        return res.status(500).json({
+            message: "Code execution failed",
+            error: error.response?.data || error.message
+        });
+    }
+};
