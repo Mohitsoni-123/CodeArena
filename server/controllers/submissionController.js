@@ -216,3 +216,53 @@ export const getSubmissionById = async(req, res)=>{
         });
     }
 }
+
+export const getProblemStats = async (req, res) => {
+    try {
+        const { problemId } = req.params;
+
+        const totalSubmissions = await Submission.countDocuments({
+            user: req.user.userId,
+            problem: problemId
+        });
+
+        const acceptedSubmissions = await Submission.countDocuments({
+            user: req.user.userId,
+            problem: problemId,
+            status: "Accepted"
+        });
+
+        const wrongAnswerSubmissions = await Submission.countDocuments({
+            user: req.user.userId,
+            problem: problemId,
+            status: "Wrong Answer"
+        });
+
+        const acceptanceRate =
+            totalSubmissions === 0
+                ? 0
+                : Number(
+                    (
+                        (acceptedSubmissions / totalSubmissions) * 100
+                    ).toFixed(2)
+                );
+
+        return res.status(200).json({
+            problemId,
+            totalSubmissions,
+            acceptedSubmissions,
+            wrongAnswerSubmissions,
+            acceptanceRate
+        });
+
+    } catch (error) {
+        console.error(
+            "Get Problem Stats Error:",
+            error.message
+        );
+
+        return res.status(500).json({
+            message: "Failed to fetch problem statistics"
+        });
+    }
+};
