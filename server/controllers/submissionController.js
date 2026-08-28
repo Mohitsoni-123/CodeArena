@@ -166,7 +166,7 @@ export const getMySubmissions = async (req, res)=>{
 
 export const getProblemSubmissions = async (req, res)=>{
     try {
-        const { problemId } = res.params;
+        const { problemId } = req.params;
 
         const submissions = await Submission.find({
             user: req.user.userId,
@@ -184,6 +184,35 @@ export const getProblemSubmissions = async (req, res)=>{
 
         return res.status(500).json({
             message: "Failed to fetch problem submission"
+        });
+    }
+}
+
+export const getSubmissionById = async(req, res)=>{
+    try {
+        const { submissionId } = req.params;
+        const submission = await Submission.findOne({
+            _id: submissionId,
+            user: req.user.userId
+        })
+            .populate("problem", "title difficulty");
+        
+        if(!submission){
+            return res.status(404).json({
+                message: "Submission not found"
+            });
+        }
+
+        return res.status(200).json({
+            submission
+        });
+    } catch (error) {
+        console.error(
+            "Get Submission error:", error.message
+        );
+
+        return res.status(500).json({
+            message: "Failed to fetch submission"
         });
     }
 }
