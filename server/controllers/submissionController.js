@@ -141,3 +141,25 @@ export const runCode = async (req, res) => {
         });
     }
 };
+
+
+export const getMySubmissions = async (req, res)=>{
+    try {
+        const submissions = await Submission.find({
+            user: req.user.userId
+        })
+            .populate("problem", "title difficulty")
+            .sort({ createdAt: -1 });
+        
+        return res.status(200).json({
+            count: submissions.length,
+            submissions
+        })
+    } catch (error) {
+        console.error("Get Submission Error", error.message);
+
+        return res.status(500).json({
+            message: "Failed to fetch submission"
+        });
+    }
+}
