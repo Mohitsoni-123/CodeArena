@@ -9,12 +9,20 @@ function ProblemDetail() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
+    //code editor states
+    const [language, setLanguage] = useState("cpp");
+    const [code, setCode] = useState("");
+
+    const [output, setOutput]
+
     useEffect(() => {
         const fetchProblem = async () => {
             try {
                 const response = await api.get(`/problems/${id}`);
 
                 setProblem(response.data.problem);
+
+                setCode(response.data.problem.starterCode || "");
             } catch (error) {
                 console.error("Fetch Problem Error:", error);
                 setError("Failed to fetch problem");
@@ -67,11 +75,42 @@ function ProblemDetail() {
                 ))}
             </ul>
 
-            <h2>Starter Code</h2>
+            <hr />
+
+            <h2>Code Editor</h2>
+
+            <select 
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+            >
+                <option value="cpp">C++</option>
+                <option value="c">C</option>
+                <option value="python">Python</option>
+                <option value="javascript">JavaScript</option>
+            </select>
+
+            <br />
+            <br />
+
+            <textarea
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                rows="20"
+                style={{
+                    width: "100%",
+                    fontFamily: "monospace",
+                    fontSize: "16px",
+                    padding: "15px",
+                    boxSizing: "border-box"
+                }}
+            />
+
+
+            {/* <h2>Starter Code</h2>
 
             <pre>
                 <code>{problem.starterCode}</code>
-            </pre>
+            </pre> */}
         </div>
     );
 }
