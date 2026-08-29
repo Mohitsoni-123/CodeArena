@@ -3,116 +3,157 @@ import { useParams } from "react-router-dom";
 import api from "../services/api";
 
 function ProblemDetail() {
-    const { id } = useParams();
+  const { id } = useParams();
 
-    const [problem, setProblem] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
+  const [problem, setProblem] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-    //code editor states
-    const [language, setLanguage] = useState("cpp");
-    const [code, setCode] = useState("");
+  //code editor states
+  const [language, setLanguage] = useState("cpp");
+  const [code, setCode] = useState("");
 
-    const [output, setOutput]
+  const [output, setOutput] = useState("");
+  const [running, setRunning] = useState(false);
 
-    useEffect(() => {
-        const fetchProblem = async () => {
-            try {
-                const response = await api.get(`/problems/${id}`);
+  useEffect(() => {
+    const fetchProblem = async () => {
+      try {
+        const response = await api.get(`/problems/${id}`);
 
-                setProblem(response.data.problem);
+        setProblem(response.data.problem);
 
-                setCode(response.data.problem.starterCode || "");
-            } catch (error) {
-                console.error("Fetch Problem Error:", error);
-                setError("Failed to fetch problem");
-            } finally {
-                setLoading(false);
-            }
-        };
+        setCode(response.data.problem.starterCode || "");
+      } catch (error) {
+        console.error("Fetch Problem Error:", error);
+        setError("Failed to fetch problem");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-        fetchProblem();
-    }, [id]);
+    fetchProblem();
+  }, [id]);
 
-    if (loading) {
-        return <h2>Loading problem...</h2>;
+  const handleRunCode = async () => {
+    try {
+      setRunning(true);
+      setOutput("");
+
+      const response = await api.post("/submissions/run", {
+        language,
+        code,
+        stdin: "",
+      });
+
+      setOutput(
+        response.data.output ||
+          response.data.stdout ||
+          "Code executed successfully",
+      );
+    } catch (error) {
+      console.error("Run Code Error:", error);
+
+      setOutput(error.response?.data?.message || "Failed to run code");
+    } finally {
+      setRunning(false);
     }
+  };
 
-    if (error) {
-        return <h2>{error}</h2>;
-    }
+  if (loading) {
+    return <h2>Loading problem...</h2>;
+  }
 
-    if (!problem) {
-        return <h2>Problem not found</h2>;
-    }
+  if (error) {
+    return <h2>{error}</h2>;
+  }
 
-    return (
-        <div>
-            <h1>{problem.title}</h1>
+  if (!problem) {
+    return <h2>Problem not found</h2>;
+  }
 
-            <p>
-                <strong>Difficulty:</strong>{" "}
-                {problem.difficulty}
-            </p>
+  return (
+    <div>
+      <h1>{problem.title}</h1>
 
-            <p>
-                <strong>Topics:</strong>{" "}
-                {problem.topics?.join(", ")}
-            </p>
+      <p>
+        <strong>Difficulty:</strong> {problem.difficulty}
+      </p>
 
-            <hr />
+      <p>
+        <strong>Topics:</strong> {problem.topics?.join(", ")}
+      </p>
 
-            <h2>Description</h2>
-            <p>{problem.description}</p>
+      <hr />
 
-            <h2>Constraints</h2>
+      <h2>Description</h2>
+      <p>{problem.description}</p>
 
-            <ul>
-                {problem.constraints?.map((constraint, index) => (
-                    <li key={index}>
-                        {constraint}
-                    </li>
-                ))}
-            </ul>
+      <h2>Constraints</h2>
 
-            <hr />
+      <ul>
+        {problem.constraints?.map((constraint, index) => (
+          <li key={index}>{constraint}</li>
+        ))}
+      </ul>
 
-            <h2>Code Editor</h2>
+      <hr />
 
-            <select 
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-            >
-                <option value="cpp">C++</option>
-                <option value="c">C</option>
-                <option value="python">Python</option>
-                <option value="javascript">JavaScript</option>
-            </select>
+      <h2>Code Editor</h2>
 
-            <br />
-            <br />
+      <select value={language} onChange={(e) => setLanguage(e.target.value)}>
+        <option value="cpp">C++</option>
+        <option value="c">C</option>
+        <option value="python">Python</option>
+        <option value="javascript">JavaScript</option>
+      </select>
 
-            <textarea
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                rows="20"
-                style={{
-                    width: "100%",
-                    fontFamily: "monospace",
-                    fontSize: "16px",
-                    padding: "15px",
-                    boxSizing: "border-box"
-                }}
-            />
+      <br />
+      <br />
 
+      <textarea
+        value={code}
+        onChange={(e) => setCode(e.target.value)}
+        rows="20"
+        style={{
+          width: "100%",
+          fontFamily: "monospace",
+          fontSize: "16px",
+          padding: "15px",
+          boxSizing: "border-box",
+        }}
+      />
 
-            {/* <h2>Starter Code</h2>
+      <br />
+      <br />
+
+      <button onClick={handleRunCode} disabled={running}>
+        {running ? "Running..." : "Run Code"}
+      </button>
+
+      {output && (
+        <div style={{ marginTop: "20px" }}>
+          <h3>Output</h3>
+
+          <pre
+            style={{
+              padding: "15px",
+              border: "1px solid gray",
+              whiteSpace: "pre-wrap",
+            }}
+          >
+            {output}
+          </pre>
+        </div>
+      )}
+
+      {/* <h2>Starter Code</h2>
 
             <pre>
                 <code>{problem.starterCode}</code>
             </pre> */}
-        </div>
-    );
+    </div>
+  );
 }
 
 export default ProblemDetail;
