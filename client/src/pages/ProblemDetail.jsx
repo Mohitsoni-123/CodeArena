@@ -16,6 +16,8 @@ function ProblemDetail() {
   const [output, setOutput] = useState("");
   const [running, setRunning] = useState(false);
 
+  const [stdin, setStdin] = useState("");
+
   useEffect(() => {
     const fetchProblem = async () => {
       try {
@@ -43,7 +45,7 @@ function ProblemDetail() {
       const response = await api.post("/submissions/run", {
         language,
         code,
-        stdin: "",
+        stdin,
       });
 
       setOutput(
@@ -124,8 +126,24 @@ function ProblemDetail() {
         }}
       />
 
+      <h3>Custom Input</h3>
+
+      <textarea
+        value={stdin}
+        onChange={(e) => setStdin(e.target.value)}
+        placeholder="Enter input here..."
+        rows="5"
+        style={{
+          width: "100%",
+          padding: "10px",
+          fontFamily: "monospace",
+          boxSizing: "border-box",
+        }}
+      />
+
       <br />
       <br />
+
 
       <button onClick={handleRunCode} disabled={running}>
         {running ? "Running..." : "Run Code"}
