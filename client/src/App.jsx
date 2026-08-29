@@ -1,6 +1,9 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom"
 import Home from "./pages/Home";
 import Problems from "./pages/Problems";
+import ProblemDetail from "./pages/ProblemDetail";
+
+
 // function Home(){
 //   return <h1>Welcome to CodeArena 🚀</h1>
 // }
@@ -19,6 +22,7 @@ const App = () => {
         <Routes>
             <Route path='/' element={ <Home /> } />
             <Route path='/problems' element={ <Problems /> }/>
+            <Route path='/problems/:id' element={ <ProblemDetail /> }/>
             <Route path='/login' element={ <Login /> } />
             <Route path='/register' element={ <Register /> } />
         </Routes>
