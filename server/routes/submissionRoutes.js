@@ -25,3 +25,4 @@ router.post("/", authMiddleware, createSubmission);
 router.get("/:submissionId", authMiddleware, getSubmissionById);
 
 export default router;
+

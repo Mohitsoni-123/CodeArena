@@ -1,11 +1,12 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom"
-
-function Home(){
-  return <h1>Welcome to CodeArena 🚀</h1>
-}
-function Problems(){
-  return <h1>Problems Page</h1>
-}
+import Home from "./pages/Home";
+import Problems from "./pages/Problems";
+// function Home(){
+//   return <h1>Welcome to CodeArena 🚀</h1>
+// }
+// function Problems(){
+//   return <h1>Problems Page</h1>
+// }
 function Login(){
   return <h1>Login Page</h1>
 }
