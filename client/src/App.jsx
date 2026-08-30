@@ -3,6 +3,7 @@ import Home from "./pages/Home";
 import Problems from "./pages/Problems";
 import ProblemDetail from "./pages/ProblemDetail";
 import MySubmissions from "./pages/MySubmissions";
+import SubmissionDetail from "./pages/SubmissionDetail";
 
 // function Home(){
 //   return <h1>Welcome to CodeArena 🚀</h1>
@@ -26,6 +27,7 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/submissions" element={<MySubmissions />} />
+        <Route path="/submissions/:id" element={<SubmissionDetail />} />
       </Routes>
     </BrowserRouter>
   );
