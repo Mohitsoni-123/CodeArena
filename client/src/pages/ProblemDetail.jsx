@@ -18,6 +18,9 @@ function ProblemDetail() {
 
   const [stdin, setStdin] = useState("");
 
+  const [submitting, setSubmitting] = useState(false);
+  const [submissionResult, setSubmissionResult] = useState(null);
+
   useEffect(() => {
     const fetchProblem = async () => {
       try {
@@ -59,6 +62,29 @@ function ProblemDetail() {
       setOutput(error.response?.data?.message || "Failed to run code");
     } finally {
       setRunning(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    try {
+      setSubmitting(true);
+      setSubmissionResult(null);
+
+      const response = await api.post("/submissions", {
+        problemId: problem._id,
+        language,
+        code,
+      });
+
+      setSubmissionResult(response.data);
+    } catch (error) {
+      console.error("Submit Error:", error);
+
+      setSubmissionResult({
+        error: error.response?.data?.message || "Failed to submit solution",
+      });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -144,10 +170,41 @@ function ProblemDetail() {
       <br />
       <br />
 
-
       <button onClick={handleRunCode} disabled={running}>
         {running ? "Running..." : "Run Code"}
       </button>
+
+      <button
+        onClick={handleSubmit}
+        disabled={submitting}
+        style={{
+          marginLeft: "10px",
+        }}
+      >
+        {submitting ? "Submitting..." : "Submit Solution"}
+      </button>
+
+      {submissionResult && (
+        <div style={{ marginTop: "20px" }}>
+          <h3>Submission Result</h3>
+
+          {submissionResult.error ? (
+            <p>{submissionResult.error}</p>
+          ) : (
+            <>
+              <p>
+                <strong>Status:</strong> {submissionResult.status}
+              </p>
+
+              <p>
+                <strong>Passed Test Cases:</strong>{" "}
+                {submissionResult.passedTestCases} /{" "}
+                {submissionResult.totalTestCases}
+              </p>
+            </>
+          )}
+        </div>
+      )}
 
       {output && (
         <div style={{ marginTop: "20px" }}>
