@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Link } from "react-router-dom";
 import Home from "./pages/Home";
 import Problems from "./pages/Problems";
 import ProblemDetail from "./pages/ProblemDetail";
@@ -20,6 +20,32 @@ function Register() {
 const App = () => {
   return (
     <BrowserRouter>
+      {/* NabBar */}
+      <nav>
+        <Link to="/">
+          <strong>CodeArena</strong>
+        </Link>
+
+        <Link to="/problems">
+          Problems
+        </Link>
+
+        <Link to="/submissions">
+          My Submissions
+        </Link>
+
+        <Link to="/login">
+          Login
+        </Link>
+
+        <Link to="/register">
+          Register
+        </Link>
+      </nav>
+
+
+
+      {/* Routes */}
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/problems" element={<Problems />} />
