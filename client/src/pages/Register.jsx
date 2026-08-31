@@ -1,45 +1,76 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import api from "../services/api";
 
-const Login = () => {
+function Register() {
   const navigate = useNavigate();
 
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     try {
       setLoading(true);
       setError("");
-      const response = await api.post("/auth/login", {
+      setSuccess("");
+
+      const response = await api.post("/auth/register", {
+        name,
         email,
         password,
       });
 
-      localStorage.setItem("token", response.data.token);
-      navigate("/problems");
-    } catch (error) {
-      console.error("Login Error:", error);
+      setSuccess(response.data.message || "Registration successful");
 
-      setError(error.response?.data?.message || "Login failed");
+      setTimeout(() => {
+        navigate("/login");
+      }, 1500);
+    } catch (error) {
+      console.error("Register Error:", error);
+
+      setError(error.response?.data?.message || "Registration failed");
     } finally {
       setLoading(false);
     }
   };
+
   return (
     <div style={{ padding: "30px", maxWidth: "400px" }}>
-      <h1>Login</h1>
+      <h1>Create Account</h1>
 
-      {error && <p style={{ color: "red" }}> {error} </p>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
+
+      {success && <p style={{ color: "green" }}>{success}</p>}
 
       <form onSubmit={handleSubmit}>
-        <div>
+        <div style={{ marginBottom: "15px" }}>
+          <label>Name</label>
+
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            style={{
+              width: "100%",
+              padding: "10px",
+              marginTop: "5px",
+              boxSizing: "border-box",
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: "15px" }}>
           <label>Email</label>
+
           <input
             type="email"
             value={email}
@@ -83,15 +114,15 @@ const Login = () => {
         </div>
 
         <button type="submit" disabled={loading}>
-          {loading ? "Loggin in..." : "Login"}
+          {loading ? "Creating Account..." : "Register"}
         </button>
       </form>
 
       <p>
-        Don't have an account? <Link to="/register">Register</Link>
+        Already have an account? <Link to="/login">Login</Link>
       </p>
     </div>
   );
-};
+}
 
-export default Login;
+export default Register;

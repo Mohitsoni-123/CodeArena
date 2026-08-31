@@ -4,10 +4,9 @@ const api = axios.create({
     baseURL: "http://localhost:3000/api"
 });
 
+// Automatically JWT token attach karega
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem("token");
-
-    console.log("Token being sent:", token);
 
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
