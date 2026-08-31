@@ -1,4 +1,10 @@
-import { BrowserRouter, Route, Routes, Link } from "react-router-dom";
+import {
+  BrowserRouter,
+  Route,
+  Routes,
+  Link,
+  useNavigate,
+} from "react-router-dom";
 import Home from "./pages/Home";
 import Problems from "./pages/Problems";
 import ProblemDetail from "./pages/ProblemDetail";
@@ -19,41 +25,51 @@ import Register from "./pages/Register";
 // function Register() {
 //   return <h1>Register Page</h1>;
 // }
+
+function Navbar() {
+  const navigate = useNavigate();
+  const token = localStorage.getItem("token");
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
+
+  return (
+    <nav
+      style={{
+        padding: "15px 30px",
+        borderBottom: "1px solid #ccc",
+        display: "flex",
+        gap: "25px",
+        alignItems: "center",
+      }}
+    >
+      <Link to="/">
+        <strong>CodeArena 🚀</strong>
+      </Link>
+
+      <Link to="/problems">Problems</Link>
+
+      {token ? (
+        <>
+          <Link to="/submissions">My Submissions</Link>
+
+          <button onClick={handleLogout}>Logout</button>
+        </>
+      ) : (
+        <>
+          <Link to="/login">Login</Link>
+
+          <Link to="/register">Register</Link>
+        </>
+      )}
+    </nav>
+  );
+}
 const App = () => {
   return (
     <BrowserRouter>
-      {/* NabBar */}
-      <nav 
-        style={{
-          padding: "15px 30px",
-          borderBottom: "1px solid #ccc",
-          display: "flex",
-          gap: "25px",
-          alignItems: "center"
-        }}
-      >
-        <Link to="/">
-          <strong>CodeArena</strong>
-        </Link>
-
-        <Link to="/problems">
-          Problems
-        </Link>
-
-        <Link to="/submissions">
-          My Submissions
-        </Link>
-
-        <Link to="/login">
-          Login
-        </Link>
-
-        <Link to="/register">
-          Register
-        </Link>
-      </nav>
-
-
+      <Navbar />
 
       {/* Routes */}
       <Routes>
