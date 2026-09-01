@@ -1,0 +1,55 @@
+.app{
+    min-height: 100vh;
+}
+
+/* Navbar Style */
+.navbar{
+    height: 70px;
+    padding: 0 8%;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+.logo{
+    font-size: 24px;
+    font-weight: 700;
+    color: #111827;
+}
+.nav-links{
+    display: flex;
+    align-items: center;
+    gap:24px;
+}
+.nav-links a{
+    color: #4b5563;
+    font-weight: 500;
+    transition: 0.2s;
+}
+.nav-links a:hover {
+    color: #2563eb;
+}
+.register-btn{
+    padding: 9px 18px;
+    background: #2563eb;
+    color: white !important;
+    border-radius: 6px;
+}
+.register-btn:hover {
+    background: #1d4ed8;
+}
+.logout-btn{
+    border: none;
+    background: #ef4444;
+    color: white;
+    padding: 9px 18px;
+    border-radius: 6px;
+    font-size: 15px;
+}
+.logout-btn:hover {
+    background: #dc2626;
+}

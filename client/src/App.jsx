@@ -1,3 +1,4 @@
+import "./App.css";
 import {
   BrowserRouter,
   Route,
@@ -12,6 +13,7 @@ import MySubmissions from "./pages/MySubmissions";
 import SubmissionDetail from "./pages/SubmissionDetail";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // function Home(){
 //   return <h1>Welcome to CodeArena 🚀</h1>
@@ -35,34 +37,28 @@ function Navbar() {
   };
 
   return (
-    <nav
-      style={{
-        padding: "15px 30px",
-        borderBottom: "1px solid #ccc",
-        display: "flex",
-        gap: "25px",
-        alignItems: "center",
-      }}
-    >
-      <Link to="/">
-        <strong>CodeArena 🚀</strong>
+    <nav className="navbar">
+      <Link to="/" className="logo">
+        CodeArena
       </Link>
 
-      <Link to="/problems">Problems</Link>
+      <div className="nav-links">
+        <Link to="/problems">Problems</Link>
 
-      {token ? (
-        <>
-          <Link to="/submissions">My Submissions</Link>
+        {token ? (
+          <>
+            <Link to="/submissions">My Submissions</Link>
 
-          <button onClick={handleLogout}>Logout</button>
-        </>
-      ) : (
-        <>
-          <Link to="/login">Login</Link>
+            <button className="logout-btn" onClick={handleLogout}>Logout</button>
+          </>
+        ) : (
+          <>
+            <Link to="/login">Login</Link>
 
-          <Link to="/register">Register</Link>
-        </>
-      )}
+            <Link to="/register" className="register-btn">Register</Link>
+          </>
+        )}
+      </div>
     </nav>
   );
 }
@@ -75,11 +71,33 @@ const App = () => {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/problems" element={<Problems />} />
-        <Route path="/problems/:id" element={<ProblemDetail />} />
+        <Route
+          path="/problems/:id"
+          element={
+            <ProtectedRoute>
+              <ProblemDetail />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/submissions" element={<MySubmissions />} />
-        <Route path="/submissions/:id" element={<SubmissionDetail />} />
+
+        <Route
+          path="/submissions"
+          element={
+            <ProtectedRoute>
+              <MySubmissions />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/submissions/:id"
+          element={
+            <ProtectedRoute>
+              <SubmissionDetail />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
