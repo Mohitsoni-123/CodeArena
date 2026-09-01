@@ -261,3 +261,244 @@
     font-size: 28px;
   }
 }
+
+/* =========================
+   Problems Page
+========================= */
+
+.problems-page{
+    min-height: calc(100vh - 70px);
+    padding: 60px 8%;
+    background: #f8fafc;
+}
+.problems-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto 40px;
+}
+.page-tag {
+    color: #2563eb;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+}
+.problems-header h1 {
+    font-size: 42px;
+    color: #111827;
+    margin-bottom: 12px;
+}
+.problems-header p {
+    color: #6b7280;
+    font-size: 17px;
+}
+.problem-count {
+    background: white;
+    border: 1px solid #e5e7eb;
+    min-width: 120px;
+    padding: 18px 25px;
+    text-align: center;
+    border-radius: 12px;
+}
+.problem-count span {
+    display: block;
+    color: #2563eb;
+    font-size: 28px;
+    font-weight: 700;
+}
+.problem-count p {
+    font-size: 13px;
+    margin-top: 4px;
+}
+/* Controls */
+.problem-controls {
+    max-width: 1200px;
+    margin: 0 auto 35px;
+    display: flex;
+    gap: 15px;
+}
+.search-input,
+.difficulty-filter {
+    border: 1px solid #d1d5db;
+    background: white;
+    padding: 13px 16px;
+    border-radius: 8px;
+    outline: none;
+    font-size: 15px;
+}
+.search-input {
+    flex: 1;
+}
+.difficulty-filter {
+    min-width: 180px;
+}
+.search-input:focus,
+.difficulty-filter:focus {
+    border-color: #2563eb;
+}
+/* Problems Grid */
+.problems-grid {
+    max-width: 1200px;
+    margin: auto;
+    display: grid;
+    grid-template-columns:
+        repeat(3, 1fr);
+    gap: 22px;
+}
+.problem-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    min-height: 220px;
+    transition: 0.25s;
+}
+.problem-card:hover {
+    transform: translateY(-5px);
+    box-shadow:
+        0 15px 35px
+        rgba(0, 0, 0, 0.08);
+}
+.problem-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.problem-number {
+    color: #9ca3af;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* Difficulty */
+
+.difficulty-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.difficulty-badge.easy {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.difficulty-badge.medium {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.difficulty-badge.hard {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+/* Card */
+
+.problem-card h2 {
+    font-size: 21px;
+    color: #111827;
+
+    margin-bottom: 18px;
+}
+
+.topics {
+    display: flex;
+    flex-wrap: wrap;
+
+    gap: 8px;
+
+    margin-bottom: 25px;
+}
+
+.topic-tag {
+    background: #f1f5f9;
+    color: #475569;
+
+    padding: 6px 10px;
+    border-radius: 6px;
+
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.solve-btn {
+    margin-top: auto;
+
+    color: #2563eb;
+    font-weight: 600;
+
+    display: inline-block;
+}
+
+.solve-btn:hover {
+    color: #1d4ed8;
+}
+
+/* No Problems */
+
+.no-problems {
+    max-width: 1200px;
+    margin: auto;
+
+    padding: 70px 20px;
+
+    text-align: center;
+
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+}
+
+.no-problems h3 {
+    margin-bottom: 10px;
+    color: #374151;
+}
+
+.no-problems p {
+    color: #6b7280;
+}
+
+/* Responsive */
+
+@media (max-width: 1000px) {
+    .problems-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 700px) {
+
+    .problems-page {
+        padding: 40px 5%;
+    }
+
+    .problems-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 25px;
+    }
+
+    .problems-header h1 {
+        font-size: 34px;
+    }
+
+    .problem-controls {
+        flex-direction: column;
+    }
+
+    .difficulty-filter {
+        width: 100%;
+    }
+
+    .problems-grid {
+        grid-template-columns: 1fr;
+    }
+}
