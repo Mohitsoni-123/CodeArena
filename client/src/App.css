@@ -1162,3 +1162,233 @@
         text-align: center;
     }
 }
+
+/* =========================
+   Submission Detail Page
+========================= */
+
+.submission-detail-page {
+    min-height: calc(100vh - 70px);
+    background: #f8fafc;
+}
+/* Header */
+
+.submission-detail-header {
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 35px 8%;
+}
+.submission-header-content {
+    max-width: 1400px;
+    margin: auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 30px;
+}
+.back-link {
+    display: inline-block;
+    text-decoration: none;
+    color: #64748b;
+    font-size: 14px;
+    margin-bottom: 22px;
+}
+.back-link:hover {
+    color: #2563eb;
+}
+.submission-detail-header h1 {
+    font-size: 36px;
+    color: #111827;
+    margin: 8px 0 15px;
+}
+.submission-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+/* Main Container */
+.submission-detail-container {
+    max-width: 1400px;
+    margin: auto;
+    padding: 40px 8% 60px;
+}
+.submission-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+    margin-bottom: 30px;
+}
+.stat-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 22px;
+}
+.stat-label {
+    display: block;
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 10px;
+}
+.stat-card strong {
+    font-size: 22px;
+    color: #111827;
+}
+.stat-card strong span {
+    font-size: 14px;
+    color: #94a3b8;
+}
+.stat-card .date-stat {
+    font-size: 14px;
+    line-height: 1.5;
+}
+/* Error Box */
+.submission-error-box {
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 12px;
+    padding: 22px;
+    margin-bottom: 30px;
+}
+.submission-error-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #c2410c;
+    margin-bottom: 15px;
+}
+.submission-error-header h2 {
+    font-size: 18px;
+}
+.submission-error-box pre {
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 18px;
+    border-radius: 8px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+}
+/* Submitted Code */
+
+.submitted-code-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    overflow: hidden;
+}
+.submitted-code-header {
+    background: #111827;
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 600;
+}
+.submitted-code-header > div {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+.submitted-code-header > span {
+    background: #1f2937;
+    border: 1px solid #374151;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #cbd5e1;
+}
+.code-status-dot {
+    width: 9px;
+    height: 9px;
+    background: #22c55e;
+    border-radius: 50%;
+}
+.submitted-code-box {
+    margin: 0;
+    padding: 25px;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 400px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    font-family: "Courier New", monospace;
+    font-size: 15px;
+    line-height: 1.7;
+}
+/* Actions */
+
+.submission-actions {
+    margin-top: 25px;
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+}
+.secondary-action-btn,
+.primary-action-btn {
+    text-decoration: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: 0.2s;
+}
+.secondary-action-btn {
+    background: white;
+    color: #475569;
+    border: 1px solid #d1d5db;
+}
+.secondary-action-btn:hover {
+    background: #f8fafc;
+}
+.primary-action-btn {
+    background: #2563eb;
+    color: white;
+}
+.primary-action-btn:hover {
+    background: #1d4ed8;
+}
+/* Responsive */
+@media (max-width: 1000px) {
+
+    .submission-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 700px) {
+
+    .submission-detail-header {
+        padding: 30px 5%;
+    }
+
+    .submission-header-content {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .submission-detail-header h1 {
+        font-size: 28px;
+    }
+
+    .submission-detail-container {
+        padding: 25px 5% 50px;
+    }
+
+    .submission-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .submission-actions {
+        flex-direction: column;
+    }
+
+    .secondary-action-btn,
+    .primary-action-btn {
+        text-align: center;
+    }
+
+    .submitted-code-box {
+        min-height: 300px;
+        font-size: 13px;
+    }
+}
