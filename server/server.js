@@ -9,6 +9,8 @@ import adminMiddleware from './middleware/adminMiddleware.js';
 import problemRoutes from "./routes/problemRoutes.js";
 import submissionRoutes from "./routes/submissionRoutes.js";
 
+import adminRoutes from "./routes/adminRoutes.js";
+
 
 
 const app = express();
@@ -26,6 +28,7 @@ connectDB();
 app.use("/api/auth",authRoutes);
 app.use("/api/problems", problemRoutes);
 app.use("/api/submissions", submissionRoutes)
+app.use("/api/admin", adminRoutes);
 app.get("/api/auth/me", authMiddleware, (req, res)=>{
     res.json({
         message: "You are authenticated",
@@ -43,38 +46,6 @@ app.get(
         });
     }
 );
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 app.get("/", (req, res)=>{
