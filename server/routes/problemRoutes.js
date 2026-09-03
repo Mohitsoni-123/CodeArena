@@ -19,9 +19,4 @@ router.put("/:id", authMiddleware, adminMiddleware, updateProblem);
 router.delete("/:id", authMiddleware, adminMiddleware, deleteProblem);
 
 
-
-
-
-
-
 export default router

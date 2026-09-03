@@ -1,5 +1,6 @@
 import Submission from "../models/Submission.js";
 import Problem from "../models/Problem.js";
+import User from "../models/User.js";
 import { executeCode } from "../services/jdoodleService.js";
 
 export const createSubmission = async (req, res) => {
@@ -79,12 +80,73 @@ export const createSubmission = async (req, res) => {
             testCasesPassed: passedTestCases,
         });
 
+        // =========================================
+        // 🔥 UPDATE STREAK ONLY FOR ACCEPTED CODE
+        // =========================================
+
+        let updatedStreak = null;
+
+        if (status === "Accepted") {
+            const user = await User.findById(req.user.userId);
+
+            if (user) {
+                const today = new Date();
+
+                // Time remove karke sirf date compare karenge
+                today.setHours(0, 0, 0, 0);
+
+                if (!user.lastSubmissionDate) {
+                    // First accepted submission
+                    user.streak = 1;
+                } else {
+                    const lastDate = new Date(user.lastSubmissionDate);
+
+                    lastDate.setHours(0, 0, 0, 0);
+
+                    const differenceInDays =
+                        Math.floor(
+                            (today - lastDate) /
+                            (1000 * 60 * 60 * 24)
+                        );
+
+                    if (differenceInDays === 0) {
+                        // Same day accepted again
+                        // Streak remains same
+                    } else if (differenceInDays === 1) {
+                        // Consecutive day
+                        user.streak += 1;
+                    } else {
+                        // User missed one or more days
+                        user.streak = 1;
+                    }
+                }
+
+                user.lastSubmissionDate = new Date();
+
+                // Store solved problem only once
+                if (
+                    !user.solvedProblems.some(
+                        (problemId) =>
+                            problemId.toString() ===
+                            problem._id.toString()
+                    )
+                ) {
+                    user.solvedProblems.push(problem._id);
+                }
+
+                await user.save();
+
+                updatedStreak = user.streak;
+            }
+        }
+
         return res.status(201).json({
             message: "Submission evaluated successfully",
             status,
             passedTestCases,
             totalTestCases: problem.testCases.length,
             testCaseResults,
+            streak: updatedStreak,
             submission
         });
 
@@ -106,14 +168,12 @@ export const runCode = async (req, res) => {
     try {
         const { language, code, stdin = "" } = req.body;
 
-        // Check required fields
         if (!language || !code) {
             return res.status(400).json({
                 message: "Language and code are required"
             });
         }
 
-        // Execute code using JDoodle
         const result = await executeCode({
             language,
             code,
@@ -143,28 +203,33 @@ export const runCode = async (req, res) => {
 };
 
 
-export const getMySubmissions = async (req, res)=>{
+export const getMySubmissions = async (req, res) => {
     try {
         const submissions = await Submission.find({
             user: req.user.userId
         })
             .populate("problem", "title difficulty")
             .sort({ createdAt: -1 });
-        
+
         return res.status(200).json({
             count: submissions.length,
             submissions
-        })
+        });
+
     } catch (error) {
-        console.error("Get Submission Error", error.message);
+        console.error(
+            "Get Submission Error",
+            error.message
+        );
 
         return res.status(500).json({
             message: "Failed to fetch submission"
         });
     }
-}
+};
 
-export const getProblemSubmissions = async (req, res)=>{
+
+export const getProblemSubmissions = async (req, res) => {
     try {
         const { problemId } = req.params;
 
@@ -173,31 +238,36 @@ export const getProblemSubmissions = async (req, res)=>{
             problem: problemId
         })
             .sort({ createdAt: -1 });
-        
+
         return res.status(200).json({
             count: submissions.length,
             submissions
-        })
-        
+        });
+
     } catch (error) {
-        console.error("Get Problem Submission Error:", error.message);
+        console.error(
+            "Get Problem Submission Error:",
+            error.message
+        );
 
         return res.status(500).json({
             message: "Failed to fetch problem submission"
         });
     }
-}
+};
 
-export const getSubmissionById = async(req, res)=>{
+
+export const getSubmissionById = async (req, res) => {
     try {
         const { submissionId } = req.params;
+
         const submission = await Submission.findOne({
             _id: submissionId,
             user: req.user.userId
         })
             .populate("problem", "title difficulty");
-        
-        if(!submission){
+
+        if (!submission) {
             return res.status(404).json({
                 message: "Submission not found"
             });
@@ -206,16 +276,19 @@ export const getSubmissionById = async(req, res)=>{
         return res.status(200).json({
             submission
         });
+
     } catch (error) {
         console.error(
-            "Get Submission error:", error.message
+            "Get Submission error:",
+            error.message
         );
 
         return res.status(500).json({
             message: "Failed to fetch submission"
         });
     }
-}
+};
+
 
 export const getProblemStats = async (req, res) => {
     try {

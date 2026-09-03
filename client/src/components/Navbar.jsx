@@ -1,20 +1,26 @@
 import { useState } from "react";
-import { Link } from "react-router-dom"
+import { Link, useNavigate  } from "react-router-dom"
 
 const Navbar = () => {
     const token = localStorage.getItem("token");
     const [search, setSearch] = useState("");
+    const navigate = useNavigate();
 
     const handleLogout = ()=>{
         localStorage.removeItem("token");
         window.location.href = "/login";
     };
-    const handleSearch = (e)=>{
-        e.preventDefaault();
-        if(search.trim()){
-            console.log("Searching:", search);
-        }
+    const handleSearch = (e) => {
+    e.preventDefault();
+
+    const searchValue = search.trim();
+
+    if (searchValue) {
+      navigate(`/problems?search=${encodeURIComponent(searchValue)}`);
+    } else {
+      navigate("/problems");
     }
+  };
   return (
     <nav className="navbar">
       

@@ -16,6 +16,11 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ProtectedRoute from "./components/ProtectedRoute";
 
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminProblems from "./pages/admin/AdminProblems";
+import CreateProblem from "./pages/admin/CreateProblem";
+import EditProblem from "./pages/admin/EditProblem";
+
 const App = () => {
   return (
     <BrowserRouter>
@@ -52,6 +57,16 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
+        
+
+        <Route path="/admin" element={<AdminDashboard />} />
+
+        <Route path="/admin/problems" element={<AdminProblems />} />
+
+        <Route path="/admin/problems/create" element={<CreateProblem />} />
+
+        <Route path="/admin/problems/:id/edit" element={<EditProblem />} />
       </Routes>
     </BrowserRouter>
   );
