@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -10,6 +11,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const { login } = useAuth();
 
   const handleSubmit = async (e) => {
   e.preventDefault();
@@ -24,13 +26,7 @@ const Login = () => {
     });
 
     // Save token
-    localStorage.setItem("token", response.data.token);
-
-    // Save user details
-    localStorage.setItem(
-      "user",
-      JSON.stringify(response.data.user)
-    );
+    login(response.data.token, response.data.user);
 
     // Redirect based on role
     if (response.data.user.role === "admin") {

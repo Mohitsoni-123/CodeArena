@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "../context/AuthContext";
 import {
   Link,
   NavLink,
@@ -6,21 +7,15 @@ import {
 } from "react-router-dom";
 
 const Navbar = () => {
-  const token = localStorage.getItem("token");
-
-  const user = JSON.parse(
-    localStorage.getItem("user") || "null"
-  );
+  const { token, user, logout } = useAuth();
 
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-
-    navigate("/login");
-  };
+  logout();
+  navigate("/login");
+};
 
   const handleSearch = (e) => {
     e.preventDefault();
