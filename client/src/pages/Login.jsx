@@ -12,25 +12,43 @@ const Login = () => {
   const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      setLoading(true);
-      setError("");
-      const response = await api.post("/auth/login", {
-        email,
-        password,
-      });
+  e.preventDefault();
 
-      localStorage.setItem("token", response.data.token);
+  try {
+    setLoading(true);
+    setError("");
+
+    const response = await api.post("/auth/login", {
+      email,
+      password,
+    });
+
+    // Save token
+    localStorage.setItem("token", response.data.token);
+
+    // Save user details
+    localStorage.setItem(
+      "user",
+      JSON.stringify(response.data.user)
+    );
+
+    // Redirect based on role
+    if (response.data.user.role === "admin") {
+      navigate("/admin");
+    } else {
       navigate("/problems");
-    } catch (error) {
-      console.error("Login Error:", error);
-
-      setError(error.response?.data?.message || "Login failed");
-    } finally {
-      setLoading(false);
     }
-  };
+
+  } catch (error) {
+    console.error("Login Error:", error);
+
+    setError(
+      error.response?.data?.message || "Login failed"
+    );
+  } finally {
+    setLoading(false);
+  }
+};
   return (
     <div style={{ padding: "30px", maxWidth: "400px" }}>
       <h1>Login</h1>
