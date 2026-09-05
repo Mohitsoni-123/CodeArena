@@ -15,38 +15,122 @@ const EditProblem = () => {
     starterCode: "",
   });
 
-  const [testCases, setTestCases] = useState([]);
+  // -----------------------------
+  // Examples
+  // -----------------------------
+  const [examples, setExamples] = useState([
+    {
+      input: "",
+      output: "",
+      explanation: "",
+    },
+  ]);
+
+  // -----------------------------
+  // Test Cases
+  // -----------------------------
+  const [testCases, setTestCases] = useState([
+    {
+      input: "",
+      expectedOutput: "",
+      isHidden: false,
+    },
+  ]);
 
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState("");
 
-  // Fetch existing problem
+  // =========================================
+  // FETCH EXISTING PROBLEM
+  // =========================================
+
   useEffect(() => {
     const fetchProblem = async () => {
       try {
-        const response = await api.get(`/problems/${id}`);
+        setLoading(true);
+        setError("");
+
+        const response = await api.get(
+          `/problems/${id}`
+        );
 
         const problem = response.data.problem;
 
+        // -----------------------------
+        // Basic Problem Data
+        // -----------------------------
         setFormData({
           title: problem.title || "",
           description: problem.description || "",
-          difficulty: problem.difficulty || "Easy",
-          topics: problem.topics?.join(", ") || "",
-          constraints: problem.constraints?.join("\n") || "",
-          starterCode: problem.starterCode || "",
+          difficulty:
+            problem.difficulty || "Easy",
+
+          topics:
+            problem.topics?.join(", ") || "",
+
+          constraints:
+            problem.constraints?.join("\n") || "",
+
+          starterCode:
+            problem.starterCode || "",
         });
 
-        setTestCases(
-          problem.testCases?.map((testCase) => ({
-            input: testCase.input || "",
-            expectedOutput: testCase.expectedOutput || "",
-            isHidden: testCase.isHidden || false,
-          })) || []
-        );
+        // -----------------------------
+        // Existing Examples
+        // -----------------------------
+        if (
+          problem.example &&
+          problem.example.length > 0
+        ) {
+          setExamples(
+            problem.example.map((example) => ({
+              input: example.input || "",
+              output: example.output || "",
+              explanation:
+                example.explanation || "",
+            }))
+          );
+        } else {
+          setExamples([
+            {
+              input: "",
+              output: "",
+              explanation: "",
+            },
+          ]);
+        }
+
+        // -----------------------------
+        // Existing Test Cases
+        // -----------------------------
+        if (
+          problem.testCases &&
+          problem.testCases.length > 0
+        ) {
+          setTestCases(
+            problem.testCases.map((testCase) => ({
+              input: testCase.input || "",
+              expectedOutput:
+                testCase.expectedOutput || "",
+              isHidden:
+                Boolean(testCase.isHidden),
+            }))
+          );
+        } else {
+          setTestCases([
+            {
+              input: "",
+              expectedOutput: "",
+              isHidden: false,
+            },
+          ]);
+        }
       } catch (error) {
-        console.error("Fetch Problem Error:", error);
+        console.error(
+          "Fetch Problem Error:",
+          error
+        );
 
         setError(
           error.response?.data?.message ||
@@ -60,6 +144,10 @@ const EditProblem = () => {
     fetchProblem();
   }, [id]);
 
+  // =========================================
+  // BASIC FORM CHANGE
+  // =========================================
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -69,11 +157,67 @@ const EditProblem = () => {
     }));
   };
 
-  const handleTestCaseChange = (index, field, value) => {
+  // =========================================
+  // EXAMPLE FUNCTIONS
+  // =========================================
+
+  const handleExampleChange = (
+    index,
+    field,
+    value
+  ) => {
+    setExamples((prev) =>
+      prev.map((example, i) =>
+        i === index
+          ? {
+              ...example,
+              [field]: value,
+            }
+          : example
+      )
+    );
+  };
+
+  const addExample = () => {
+    setExamples((prev) => [
+      ...prev,
+      {
+        input: "",
+        output: "",
+        explanation: "",
+      },
+    ]);
+  };
+
+  const removeExample = (index) => {
+    if (examples.length === 1) {
+      alert(
+        "At least one example is required"
+      );
+      return;
+    }
+
+    setExamples((prev) =>
+      prev.filter((_, i) => i !== index)
+    );
+  };
+
+  // =========================================
+  // TEST CASE FUNCTIONS
+  // =========================================
+
+  const handleTestCaseChange = (
+    index,
+    field,
+    value
+  ) => {
     setTestCases((prev) =>
       prev.map((testCase, i) =>
         i === index
-          ? { ...testCase, [field]: value }
+          ? {
+              ...testCase,
+              [field]: value,
+            }
           : testCase
       )
     );
@@ -92,7 +236,9 @@ const EditProblem = () => {
 
   const removeTestCase = (index) => {
     if (testCases.length === 1) {
-      alert("At least one test case is required");
+      alert(
+        "At least one test case is required"
+      );
       return;
     }
 
@@ -101,6 +247,10 @@ const EditProblem = () => {
     );
   };
 
+  // =========================================
+  // UPDATE PROBLEM
+  // =========================================
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -108,9 +258,51 @@ const EditProblem = () => {
       setUpdating(true);
       setError("");
 
+      // -----------------------------
+      // Validate Examples
+      // -----------------------------
+      const validExamples = examples.filter(
+        (example) =>
+          example.input.trim() ||
+          example.output.trim() ||
+          example.explanation.trim()
+      );
+
+      // -----------------------------
+      // Validate Test Cases
+      // -----------------------------
+      const validTestCases =
+        testCases.filter(
+          (testCase) =>
+            testCase.input.trim() &&
+            testCase.expectedOutput.trim()
+        );
+
+      if (validExamples.length === 0) {
+        setError(
+          "Please add at least one example."
+        );
+        setUpdating(false);
+        return;
+      }
+
+      if (validTestCases.length === 0) {
+        setError(
+          "Please add at least one valid test case."
+        );
+        setUpdating(false);
+        return;
+      }
+
+      // -----------------------------
+      // Problem Data
+      // -----------------------------
       const problemData = {
-        title: formData.title,
-        description: formData.description,
+        title: formData.title.trim(),
+
+        description:
+          formData.description.trim(),
+
         difficulty: formData.difficulty,
 
         topics: formData.topics
@@ -118,23 +310,40 @@ const EditProblem = () => {
           .map((topic) => topic.trim())
           .filter(Boolean),
 
-        constraints: formData.constraints
-          .split("\n")
-          .map((constraint) => constraint.trim())
-          .filter(Boolean),
+        constraints:
+          formData.constraints
+            .split("\n")
+            .map((constraint) =>
+              constraint.trim()
+            )
+            .filter(Boolean),
 
-        starterCode: formData.starterCode,
+        starterCode:
+          formData.starterCode,
 
-        testCases,
+        // IMPORTANT:
+        // Backend uses "example"
+        example: validExamples,
+
+        testCases: validTestCases,
       };
 
-      await api.put(`/problems/${id}`, problemData);
+      await api.put(
+        `/problems/${id}`,
+        problemData
+      );
 
-      alert("Problem updated successfully 🎉");
+      alert(
+        "Problem updated successfully 🎉"
+      );
 
       navigate("/admin/problems");
     } catch (error) {
-      console.error("Update Problem Error:", error);
+      console.error(
+        "Update Problem Error:",
+        error.response?.data ||
+          error.message
+      );
 
       setError(
         error.response?.data?.message ||
@@ -145,34 +354,59 @@ const EditProblem = () => {
     }
   };
 
+  // =========================================
+  // LOADING
+  // =========================================
+
   if (loading) {
-    return <h2>Loading problem...</h2>;
+    return (
+      <div style={loadingStyle}>
+        <h2>Loading problem...</h2>
+      </div>
+    );
   }
+
+  // =========================================
+  // ERROR
+  // =========================================
 
   if (error && !formData.title) {
-    return <h2>{error}</h2>;
+    return (
+      <div style={loadingStyle}>
+        <h2>{error}</h2>
+      </div>
+    );
   }
 
+  // =========================================
+  // UI
+  // =========================================
+
   return (
-    <div
-      style={{
-        padding: "30px",
-        maxWidth: "900px",
-        margin: "auto",
-      }}
-    >
+    <div style={containerStyle}>
       <h1>Edit Problem</h1>
 
+      <p>
+        Update your CodeArena coding problem.
+      </p>
+
+      {/* ERROR MESSAGE */}
+
       {error && (
-        <p style={{ color: "red" }}>
+        <div style={errorStyle}>
           {error}
-        </p>
+        </div>
       )}
 
       <form onSubmit={handleSubmit}>
+        {/* ================================= */}
+        {/* TITLE */}
+        {/* ================================= */}
 
         <div style={fieldStyle}>
-          <label>Problem Title</label>
+          <label>
+            <strong>Problem Title</strong>
+          </label>
 
           <input
             type="text"
@@ -184,8 +418,14 @@ const EditProblem = () => {
           />
         </div>
 
+        {/* ================================= */}
+        {/* DESCRIPTION */}
+        {/* ================================= */}
+
         <div style={fieldStyle}>
-          <label>Description</label>
+          <label>
+            <strong>Description</strong>
+          </label>
 
           <textarea
             name="description"
@@ -197,8 +437,14 @@ const EditProblem = () => {
           />
         </div>
 
+        {/* ================================= */}
+        {/* DIFFICULTY */}
+        {/* ================================= */}
+
         <div style={fieldStyle}>
-          <label>Difficulty</label>
+          <label>
+            <strong>Difficulty</strong>
+          </label>
 
           <select
             name="difficulty"
@@ -206,29 +452,51 @@ const EditProblem = () => {
             onChange={handleChange}
             style={inputStyle}
           >
-            <option value="Easy">Easy</option>
-            <option value="Medium">Medium</option>
-            <option value="Hard">Hard</option>
+            <option value="Easy">
+              Easy
+            </option>
+
+            <option value="Medium">
+              Medium
+            </option>
+
+            <option value="Hard">
+              Hard
+            </option>
           </select>
         </div>
 
+        {/* ================================= */}
+        {/* TOPICS */}
+        {/* ================================= */}
+
         <div style={fieldStyle}>
-          <label>Topics</label>
+          <label>
+            <strong>Topics</strong>
+          </label>
 
           <input
             type="text"
             name="topics"
             value={formData.topics}
             onChange={handleChange}
-            placeholder="Array, Hash Table"
+            placeholder="Array, Hash Table, Two Pointer"
             style={inputStyle}
           />
 
-          <small>Separate topics with commas.</small>
+          <small>
+            Separate topics with commas.
+          </small>
         </div>
 
+        {/* ================================= */}
+        {/* CONSTRAINTS */}
+        {/* ================================= */}
+
         <div style={fieldStyle}>
-          <label>Constraints</label>
+          <label>
+            <strong>Constraints</strong>
+          </label>
 
           <textarea
             name="constraints"
@@ -238,11 +506,19 @@ const EditProblem = () => {
             style={inputStyle}
           />
 
-          <small>Write each constraint on a new line.</small>
+          <small>
+            Write each constraint on a new line.
+          </small>
         </div>
 
+        {/* ================================= */}
+        {/* STARTER CODE */}
+        {/* ================================= */}
+
         <div style={fieldStyle}>
-          <label>Starter Code</label>
+          <label>
+            <strong>Starter Code</strong>
+          </label>
 
           <textarea
             name="starterCode"
@@ -256,85 +532,262 @@ const EditProblem = () => {
           />
         </div>
 
-        <div style={{ marginTop: "30px" }}>
+        {/* ================================= */}
+        {/* EXAMPLES */}
+        {/* ================================= */}
+
+        <div style={sectionStyle}>
+          <h2>Examples</h2>
+
+          <p style={mutedTextStyle}>
+            These examples are visible to users
+            on the problem page.
+          </p>
+
+          {examples.map(
+            (example, index) => (
+              <div
+                key={index}
+                style={cardStyle}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent:
+                      "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <h3>
+                    Example {index + 1}
+                  </h3>
+
+                  {examples.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        removeExample(index)
+                      }
+                      style={
+                        deleteButtonStyle
+                      }
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+
+                {/* Input */}
+
+                <div style={fieldStyle}>
+                  <label>
+                    <strong>
+                      Input
+                    </strong>
+                  </label>
+
+                  <textarea
+                    value={example.input}
+                    onChange={(e) =>
+                      handleExampleChange(
+                        index,
+                        "input",
+                        e.target.value
+                      )
+                    }
+                    rows="3"
+                    required
+                    style={inputStyle}
+                  />
+                </div>
+
+                {/* Output */}
+
+                <div style={fieldStyle}>
+                  <label>
+                    <strong>
+                      Output
+                    </strong>
+                  </label>
+
+                  <textarea
+                    value={example.output}
+                    onChange={(e) =>
+                      handleExampleChange(
+                        index,
+                        "output",
+                        e.target.value
+                      )
+                    }
+                    rows="3"
+                    required
+                    style={inputStyle}
+                  />
+                </div>
+
+                {/* Explanation */}
+
+                <div style={fieldStyle}>
+                  <label>
+                    <strong>
+                      Explanation
+                    </strong>
+                  </label>
+
+                  <textarea
+                    value={
+                      example.explanation
+                    }
+                    onChange={(e) =>
+                      handleExampleChange(
+                        index,
+                        "explanation",
+                        e.target.value
+                      )
+                    }
+                    rows="4"
+                    placeholder="Explain the example..."
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+            )
+          )}
+
+          <button
+            type="button"
+            onClick={addExample}
+            style={addButtonStyle}
+          >
+            + Add Example
+          </button>
+        </div>
+
+        {/* ================================= */}
+        {/* TEST CASES */}
+        {/* ================================= */}
+
+        <div style={sectionStyle}>
           <h2>Test Cases</h2>
 
-          {testCases.map((testCase, index) => (
-            <div
-              key={index}
-              style={{
-                border: "1px solid gray",
-                padding: "20px",
-                marginBottom: "20px",
-                borderRadius: "10px",
-              }}
-            >
-              <h3>Test Case {index + 1}</h3>
+          <p style={mutedTextStyle}>
+            These test cases are used to
+            evaluate submitted code.
+          </p>
 
-              <div style={fieldStyle}>
-                <label>Input</label>
-
-                <textarea
-                  value={testCase.input}
-                  onChange={(e) =>
-                    handleTestCaseChange(
-                      index,
-                      "input",
-                      e.target.value
-                    )
-                  }
-                  rows="3"
-                  required
-                  style={inputStyle}
-                />
-              </div>
-
-              <div style={fieldStyle}>
-                <label>Expected Output</label>
-
-                <input
-                  type="text"
-                  value={testCase.expectedOutput}
-                  onChange={(e) =>
-                    handleTestCaseChange(
-                      index,
-                      "expectedOutput",
-                      e.target.value
-                    )
-                  }
-                  required
-                  style={inputStyle}
-                />
-              </div>
-
-              <label style={{ marginTop: "15px" }}>
-                <input
-                  type="checkbox"
-                  checked={testCase.isHidden}
-                  onChange={(e) =>
-                    handleTestCaseChange(
-                      index,
-                      "isHidden",
-                      e.target.checked
-                    )
-                  }
-                />
-
-                {" "}Hidden Test Case
-              </label>
-
-              <br />
-              <br />
-
-              <button
-                type="button"
-                onClick={() => removeTestCase(index)}
-                style={deleteButtonStyle}
+          {testCases.map(
+            (testCase, index) => (
+              <div
+                key={index}
+                style={cardStyle}
               >
-                Remove Test Case
-              </button>
-            </div>
-          ))}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent:
+                      "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <h3>
+                    Test Case {index + 1}
+                  </h3>
+
+                  {testCases.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        removeTestCase(index)
+                      }
+                      style={
+                        deleteButtonStyle
+                      }
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+
+                {/* Input */}
+
+                <div style={fieldStyle}>
+                  <label>
+                    <strong>
+                      Input
+                    </strong>
+                  </label>
+
+                  <textarea
+                    value={testCase.input}
+                    onChange={(e) =>
+                      handleTestCaseChange(
+                        index,
+                        "input",
+                        e.target.value
+                      )
+                    }
+                    rows="3"
+                    required
+                    style={inputStyle}
+                  />
+                </div>
+
+                {/* Expected Output */}
+
+                <div style={fieldStyle}>
+                  <label>
+                    <strong>
+                      Expected Output
+                    </strong>
+                  </label>
+
+                  <input
+                    type="text"
+                    value={
+                      testCase.expectedOutput
+                    }
+                    onChange={(e) =>
+                      handleTestCaseChange(
+                        index,
+                        "expectedOutput",
+                        e.target.value
+                      )
+                    }
+                    required
+                    style={inputStyle}
+                  />
+                </div>
+
+                {/* Hidden */}
+
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems:
+                      "center",
+                    gap: "8px",
+                    marginTop: "15px",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={
+                      testCase.isHidden
+                    }
+                    onChange={(e) =>
+                      handleTestCaseChange(
+                        index,
+                        "isHidden",
+                        e.target.checked
+                      )
+                    }
+                  />
+
+                  Hidden Test Case
+                </label>
+              </div>
+            )
+          )}
 
           <button
             type="button"
@@ -345,20 +798,50 @@ const EditProblem = () => {
           </button>
         </div>
 
-        <br />
+        {/* ================================= */}
+        {/* SAVE */}
+        {/* ================================= */}
 
-        <button
-          type="submit"
-          disabled={updating}
-          style={submitButtonStyle}
+        <div
+          style={{
+            marginTop: "35px",
+            marginBottom: "50px",
+          }}
         >
-          {updating
-            ? "Updating Problem..."
-            : "Save Changes"}
-        </button>
+          <button
+            type="submit"
+            disabled={updating}
+            style={{
+              ...submitButtonStyle,
+              opacity: updating ? 0.7 : 1,
+              cursor: updating
+                ? "not-allowed"
+                : "pointer",
+            }}
+          >
+            {updating
+              ? "Updating Problem..."
+              : "Save Changes"}
+          </button>
+        </div>
       </form>
     </div>
   );
+};
+
+// =============================================
+// STYLES
+// =============================================
+
+const containerStyle = {
+  padding: "30px",
+  maxWidth: "900px",
+  margin: "auto",
+};
+
+const loadingStyle = {
+  padding: "40px",
+  textAlign: "center",
 };
 
 const fieldStyle = {
@@ -371,15 +854,45 @@ const fieldStyle = {
 const inputStyle = {
   padding: "12px",
   borderRadius: "6px",
-  border: "1px solid gray",
+  border: "1px solid #d1d5db",
   fontSize: "15px",
+  width: "100%",
+  boxSizing: "border-box",
+};
+
+const sectionStyle = {
+  marginTop: "35px",
+};
+
+const cardStyle = {
+  border: "1px solid #d1d5db",
+  padding: "20px",
+  marginBottom: "20px",
+  borderRadius: "10px",
+  background: "#fafafa",
+};
+
+const mutedTextStyle = {
+  color: "#666",
+};
+
+const errorStyle = {
+  marginTop: "15px",
+  padding: "12px",
+  borderRadius: "8px",
+  background: "#fee2e2",
+  color: "#b91c1c",
+  border: "1px solid #fecaca",
 };
 
 const addButtonStyle = {
   padding: "10px 16px",
-  border: "none",
+  border: "1px solid #2563eb",
+  background: "#fff",
+  color: "#2563eb",
   borderRadius: "6px",
   cursor: "pointer",
+  fontSize: "14px",
 };
 
 const deleteButtonStyle = {
@@ -397,7 +910,6 @@ const submitButtonStyle = {
   color: "white",
   border: "none",
   borderRadius: "8px",
-  cursor: "pointer",
   fontSize: "16px",
 };
 

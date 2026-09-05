@@ -15,6 +15,8 @@ function ProblemDetail() {
   const [output, setOutput] = useState("");
   const [running, setRunning] = useState(false);
 
+  const [runResults, setRunResults] = useState([]);
+
   const [stdin, setStdin] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
@@ -43,28 +45,111 @@ function ProblemDetail() {
       setRunning(true);
       setOutput("");
       setSubmissionResult(null);
+      setRunResults([]);
 
-      const response = await api.post("/submissions/run", {
-        language,
-        code,
-        stdin,
-      });
+      // -----------------------------
+      // Run visible examples
+      // -----------------------------
+      const examples = problem?.example || [];
 
-      const data = response.data;
+      if (examples.length > 0) {
+        const results = [];
 
-      if (data.error) {
-        setOutput(`${data.status || "Execution Error"}\n\n${data.error}`);
-      } else {
-        setOutput(data.output || "No output");
+        for (let index = 0; index < examples.length; index++) {
+          const example = examples[index];
+
+          try {
+            const response = await api.post("/submissions/run", {
+              language,
+              code,
+              stdin: example.input,
+            });
+
+            const data = response.data;
+
+            const actualOutput = (data.output || "").trim();
+
+            const expectedOutput = (example.output || "").trim();
+
+            const passed = !data.error && actualOutput === expectedOutput;
+
+            results.push({
+              index,
+              input: example.input,
+              expectedOutput,
+              actualOutput,
+              passed,
+              status: data.error
+                ? data.status || "Error"
+                : passed
+                  ? "Accepted"
+                  : "Wrong Answer",
+              error: data.error || "",
+            });
+          } catch (error) {
+            const backendError = error.response?.data?.error;
+
+            let errorMessage = "Failed to run example";
+
+            if (typeof backendError === "string") {
+              errorMessage = backendError;
+            } else if (backendError?.message) {
+              errorMessage = backendError.message;
+            } else if (error.response?.data?.message) {
+              errorMessage = error.response.data.message;
+            }
+
+            results.push({
+              index,
+              input: example.input,
+              expectedOutput: example.output,
+              actualOutput: "",
+              passed: false,
+              status: "Error",
+              error: errorMessage,
+            });
+          }
+        }
+
+        setRunResults(results);
+      }
+
+      // -----------------------------
+      // Custom Input
+      // -----------------------------
+      if (stdin.trim()) {
+        const response = await api.post("/submissions/run", {
+          language,
+          code,
+          stdin,
+        });
+
+        const data = response.data;
+
+        if (data.error) {
+          setOutput(
+            `${data.status || "Execution Error"}\n\n${
+              typeof data.error === "string"
+                ? data.error
+                : data.error.message || "Execution failed"
+            }`,
+          );
+        } else {
+          setOutput(data.output || "No output");
+        }
       }
     } catch (error) {
       console.error("Run Code Error:", error);
 
-      setOutput(
-        error.response?.data?.error ||
-          error.response?.data?.message ||
-          "Failed to run code",
-      );
+      const backendError = error.response?.data?.error;
+
+      if (typeof backendError === "string") {
+        setOutput(backendError);
+      } else if (backendError?.message) {
+        setOutput(backendError.message);
+      } else {
+        setOutput(error.response?.data?.message || "Failed to run code");
+      }
     } finally {
       setRunning(false);
     }
@@ -308,9 +393,83 @@ function ProblemDetail() {
 
           {/* Output */}
 
+          {/* ================================= */}
+          {/* RUN CODE RESULTS */}
+          {/* ================================= */}
+
+          {runResults.length > 0 && (
+            <div className="run-results">
+              <div className="run-results-header">
+                <h3>Run Code</h3>
+
+                <span>
+                  {runResults.filter((result) => result.passed).length}
+                  {" / "}
+                  {runResults.length}
+                  {" Test Cases Passed"}
+                </span>
+              </div>
+
+              <div className="run-test-cases">
+                {runResults.map((result) => (
+                  <div
+                    key={result.index}
+                    className={`run-test-case ${
+                      result.passed ? "run-passed" : "run-failed"
+                    }`}
+                  >
+                    <div className="run-test-header">
+                      <div>
+                        <span className="run-test-icon">
+                          {result.passed ? "✓" : "✕"}
+                        </span>
+
+                        <strong>Example {result.index + 1}</strong>
+                      </div>
+
+                      <strong>{result.status}</strong>
+                    </div>
+
+                    <div className="run-test-content">
+                      <div>
+                        <span>Input</span>
+
+                        <pre>{result.input}</pre>
+                      </div>
+
+                      <div>
+                        <span>Expected Output</span>
+
+                        <pre>{result.expectedOutput}</pre>
+                      </div>
+
+                      <div>
+                        <span>Your Output</span>
+
+                        <pre>{result.actualOutput || "(empty)"}</pre>
+                      </div>
+
+                      {result.error && (
+                        <div>
+                          <span>Error</span>
+
+                          <pre className="run-error">{result.error}</pre>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ================================= */}
+          {/* CUSTOM INPUT OUTPUT */}
+          {/* ================================= */}
+
           {output && (
             <div className="output-section">
-              <h3>Output</h3>
+              <h3>Custom Input Output</h3>
 
               <pre className="output-box">{output}</pre>
             </div>

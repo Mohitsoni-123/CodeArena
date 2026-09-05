@@ -1571,3 +1571,111 @@
     line-height: 1.6;
     font-size: 14px;
 }
+
+
+/* =========================================
+   RUN CODE
+========================================= */
+
+.run-results {
+    margin-top: 20px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.run-results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.run-results-header h3 {
+    margin: 0;
+    font-size: 15px;
+}
+
+.run-results-header span {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.run-test-cases {
+    display: flex;
+    flex-direction: column;
+}
+
+.run-test-case {
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.run-test-case:last-child {
+    border-bottom: none;
+}
+
+.run-test-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    font-size: 13px;
+}
+
+.run-test-header > div {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.run-test-icon {
+    font-size: 15px;
+}
+
+.run-passed .run-test-icon {
+    color: #16a34a;
+}
+
+.run-passed .run-test-header > strong {
+    color: #16a34a;
+}
+
+.run-failed .run-test-icon {
+    color: #dc2626;
+}
+
+.run-failed .run-test-header > strong {
+    color: #dc2626;
+}
+
+.run-test-content {
+    padding: 0 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.run-test-content > div > span {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+}
+
+.run-test-content pre {
+    margin: 0;
+    padding: 10px;
+    background: #f3f4f6;
+    border-radius: 6px;
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.run-test-content .run-error {
+    color: #dc2626;
+    background: #fef2f2;
+}
