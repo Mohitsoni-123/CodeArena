@@ -1518,3 +1518,56 @@
 }
 
 
+.examples-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.example-card {
+    border: 1px solid #2a2a2a;
+    border-radius: 12px;
+    padding: 18px;
+    background: #111;
+}
+
+.example-card h3 {
+    margin: 0 0 16px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.example-content {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.example-item > span {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #9ca3af;
+}
+
+.example-item pre {
+    margin: 0;
+    padding: 12px;
+    overflow-x: auto;
+    border-radius: 8px;
+    background: #0a0a0a;
+    border: 1px solid #222;
+    color: #e5e7eb;
+    font-family: "Courier New", monospace;
+    font-size: 13px;
+    white-space: pre-wrap;
+}
+
+.example-item p {
+    margin: 0;
+    color: #d1d5db;
+    line-height: 1.6;
+    font-size: 14px;
+}

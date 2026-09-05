@@ -14,6 +14,14 @@ const CreateProblem = () => {
     starterCode: "",
   });
 
+  const [examples, setExamples] = useState([
+    {
+      input: "",
+      output: "",
+      explanation: "",
+    },
+  ]);
+
   const [testCases, setTestCases] = useState([
     {
       input: "",
@@ -25,26 +33,75 @@ const CreateProblem = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // -----------------------------
+  // Form Change
+  // -----------------------------
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       [name]: value,
-    });
+    }));
   };
 
+  // -----------------------------
+  // Example Functions
+  // -----------------------------
+  const handleExampleChange = (index, field, value) => {
+    setExamples((prev) =>
+      prev.map((example, i) =>
+        i === index
+          ? {
+              ...example,
+              [field]: value,
+            }
+          : example
+      )
+    );
+  };
+
+  const addExample = () => {
+    setExamples((prev) => [
+      ...prev,
+      {
+        input: "",
+        output: "",
+        explanation: "",
+      },
+    ]);
+  };
+
+  const removeExample = (index) => {
+    if (examples.length === 1) {
+      alert("At least one example is required");
+      return;
+    }
+
+    setExamples((prev) =>
+      prev.filter((_, i) => i !== index)
+    );
+  };
+
+  // -----------------------------
+  // Test Case Functions
+  // -----------------------------
   const handleTestCaseChange = (index, field, value) => {
-    const updatedTestCases = [...testCases];
-
-    updatedTestCases[index][field] = value;
-
-    setTestCases(updatedTestCases);
+    setTestCases((prev) =>
+      prev.map((testCase, i) =>
+        i === index
+          ? {
+              ...testCase,
+              [field]: value,
+            }
+          : testCase
+      )
+    );
   };
 
   const addTestCase = () => {
-    setTestCases([
-      ...testCases,
+    setTestCases((prev) => [
+      ...prev,
       {
         input: "",
         expectedOutput: "",
@@ -59,11 +116,14 @@ const CreateProblem = () => {
       return;
     }
 
-    setTestCases(
-      testCases.filter((_, i) => i !== index)
+    setTestCases((prev) =>
+      prev.filter((_, i) => i !== index)
     );
   };
 
+  // -----------------------------
+  // Submit Problem
+  // -----------------------------
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -71,9 +131,38 @@ const CreateProblem = () => {
       setLoading(true);
       setError("");
 
+      // Validate examples
+      const validExamples = examples.filter(
+        (example) =>
+          example.input.trim() ||
+          example.output.trim() ||
+          example.explanation.trim()
+      );
+
+      // Validate test cases
+      const validTestCases = testCases.filter(
+        (testCase) =>
+          testCase.input.trim() &&
+          testCase.expectedOutput.trim()
+      );
+
+      if (validExamples.length === 0) {
+        setError("Please add at least one example.");
+        setLoading(false);
+        return;
+      }
+
+      if (validTestCases.length === 0) {
+        setError("Please add at least one valid test case.");
+        setLoading(false);
+        return;
+      }
+
       const problemData = {
-        title: formData.title,
-        description: formData.description,
+        title: formData.title.trim(),
+
+        description: formData.description.trim(),
+
         difficulty: formData.difficulty,
 
         topics: formData.topics
@@ -88,7 +177,11 @@ const CreateProblem = () => {
 
         starterCode: formData.starterCode,
 
-        testCases,
+        // IMPORTANT:
+        // Backend Problem model uses "example" singular
+        example: validExamples,
+
+        testCases: validTestCases,
       };
 
       await api.post("/problems", problemData);
@@ -96,13 +189,15 @@ const CreateProblem = () => {
       alert("Problem created successfully 🎉");
 
       navigate("/admin/problems");
-
     } catch (error) {
-      console.error("Create Problem Error:", error);
+      console.error(
+        "Create Problem Error:",
+        error.response?.data || error.message
+      );
 
       setError(
         error.response?.data?.message ||
-        "Failed to create problem"
+          "Failed to create problem"
       );
     } finally {
       setLoading(false);
@@ -110,22 +205,45 @@ const CreateProblem = () => {
   };
 
   return (
-    <div style={{ padding: "30px", maxWidth: "900px", margin: "auto" }}>
+    <div
+      style={{
+        padding: "30px",
+        maxWidth: "900px",
+        margin: "auto",
+      }}
+    >
+      {/* PAGE HEADER */}
       <h1>Create New Problem</h1>
 
-      <p>Add a new coding problem to CodeArena.</p>
+      <p>
+        Add a new coding problem to CodeArena.
+      </p>
 
+      {/* ERROR */}
       {error && (
-        <p style={{ color: "red" }}>
+        <div
+          style={{
+            marginTop: "15px",
+            padding: "12px",
+            borderRadius: "8px",
+            background: "#fee2e2",
+            color: "#b91c1c",
+            border: "1px solid #fecaca",
+          }}
+        >
           {error}
-        </p>
+        </div>
       )}
 
       <form onSubmit={handleSubmit}>
-
+        {/* ===================================== */}
         {/* TITLE */}
+        {/* ===================================== */}
+
         <div style={fieldStyle}>
-          <label>Problem Title</label>
+          <label>
+            <strong>Problem Title</strong>
+          </label>
 
           <input
             type="text"
@@ -138,9 +256,14 @@ const CreateProblem = () => {
           />
         </div>
 
+        {/* ===================================== */}
         {/* DESCRIPTION */}
+        {/* ===================================== */}
+
         <div style={fieldStyle}>
-          <label>Description</label>
+          <label>
+            <strong>Description</strong>
+          </label>
 
           <textarea
             name="description"
@@ -153,9 +276,14 @@ const CreateProblem = () => {
           />
         </div>
 
+        {/* ===================================== */}
         {/* DIFFICULTY */}
+        {/* ===================================== */}
+
         <div style={fieldStyle}>
-          <label>Difficulty</label>
+          <label>
+            <strong>Difficulty</strong>
+          </label>
 
           <select
             name="difficulty"
@@ -163,15 +291,28 @@ const CreateProblem = () => {
             onChange={handleChange}
             style={inputStyle}
           >
-            <option value="Easy">Easy</option>
-            <option value="Medium">Medium</option>
-            <option value="Hard">Hard</option>
+            <option value="Easy">
+              Easy
+            </option>
+
+            <option value="Medium">
+              Medium
+            </option>
+
+            <option value="Hard">
+              Hard
+            </option>
           </select>
         </div>
 
+        {/* ===================================== */}
         {/* TOPICS */}
+        {/* ===================================== */}
+
         <div style={fieldStyle}>
-          <label>Topics</label>
+          <label>
+            <strong>Topics</strong>
+          </label>
 
           <input
             type="text"
@@ -182,12 +323,19 @@ const CreateProblem = () => {
             style={inputStyle}
           />
 
-          <small>Separate topics using commas.</small>
+          <small>
+            Separate topics using commas.
+          </small>
         </div>
 
+        {/* ===================================== */}
         {/* CONSTRAINTS */}
+        {/* ===================================== */}
+
         <div style={fieldStyle}>
-          <label>Constraints</label>
+          <label>
+            <strong>Constraints</strong>
+          </label>
 
           <textarea
             name="constraints"
@@ -200,12 +348,19 @@ const CreateProblem = () => {
             style={inputStyle}
           />
 
-          <small>Write each constraint on a new line.</small>
+          <small>
+            Write each constraint on a new line.
+          </small>
         </div>
 
+        {/* ===================================== */}
         {/* STARTER CODE */}
+        {/* ===================================== */}
+
         <div style={fieldStyle}>
-          <label>Starter Code</label>
+          <label>
+            <strong>Starter Code</strong>
+          </label>
 
           <textarea
             name="starterCode"
@@ -220,24 +375,197 @@ const CreateProblem = () => {
           />
         </div>
 
+        {/* ===================================== */}
+        {/* EXAMPLES */}
+        {/* ===================================== */}
+
+        <div
+          style={{
+            marginTop: "35px",
+          }}
+        >
+          <h2>Examples</h2>
+
+          <p
+            style={{
+              color: "#666",
+              marginBottom: "15px",
+            }}
+          >
+            Add examples that users will see on the
+            problem page.
+          </p>
+
+          {examples.map((example, index) => (
+            <div
+              key={index}
+              style={exampleCardStyle}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "15px",
+                }}
+              >
+                <h3
+                  style={{
+                    margin: 0,
+                  }}
+                >
+                  Example {index + 1}
+                </h3>
+
+                {examples.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      removeExample(index)
+                    }
+                    style={deleteButtonStyle}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+
+              {/* Example Input */}
+              <div style={fieldStyle}>
+                <label>
+                  <strong>Input</strong>
+                </label>
+
+                <textarea
+                  value={example.input}
+                  onChange={(e) =>
+                    handleExampleChange(
+                      index,
+                      "input",
+                      e.target.value
+                    )
+                  }
+                  placeholder="Example input"
+                  rows="3"
+                  required
+                  style={inputStyle}
+                />
+              </div>
+
+              {/* Example Output */}
+              <div style={fieldStyle}>
+                <label>
+                  <strong>Output</strong>
+                </label>
+
+                <textarea
+                  value={example.output}
+                  onChange={(e) =>
+                    handleExampleChange(
+                      index,
+                      "output",
+                      e.target.value
+                    )
+                  }
+                  placeholder="Expected output"
+                  rows="3"
+                  required
+                  style={inputStyle}
+                />
+              </div>
+
+              {/* Explanation */}
+              <div style={fieldStyle}>
+                <label>
+                  <strong>Explanation</strong>
+                </label>
+
+                <textarea
+                  value={example.explanation}
+                  onChange={(e) =>
+                    handleExampleChange(
+                      index,
+                      "explanation",
+                      e.target.value
+                    )
+                  }
+                  placeholder="Explain why this is the expected output..."
+                  rows="4"
+                  style={inputStyle}
+                />
+              </div>
+            </div>
+          ))}
+
+          <button
+            type="button"
+            onClick={addExample}
+            style={addButtonStyle}
+          >
+            + Add Example
+          </button>
+        </div>
+
+        {/* ===================================== */}
         {/* TEST CASES */}
-        <div style={{ marginTop: "30px" }}>
+        {/* ===================================== */}
+
+        <div
+          style={{
+            marginTop: "35px",
+          }}
+        >
           <h2>Test Cases</h2>
+
+          <p
+            style={{
+              color: "#666",
+              marginBottom: "15px",
+            }}
+          >
+            Test cases are used to evaluate submitted
+            code.
+          </p>
 
           {testCases.map((testCase, index) => (
             <div
               key={index}
-              style={{
-                border: "1px solid gray",
-                padding: "20px",
-                marginBottom: "20px",
-                borderRadius: "10px",
-              }}
+              style={testCaseCardStyle}
             >
-              <h3>Test Case {index + 1}</h3>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "15px",
+                }}
+              >
+                <h3
+                  style={{
+                    margin: 0,
+                  }}
+                >
+                  Test Case {index + 1}
+                </h3>
 
+                {testCases.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      removeTestCase(index)
+                    }
+                    style={deleteButtonStyle}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+
+              {/* Input */}
               <div style={fieldStyle}>
-                <label>Input</label>
+                <label>
+                  <strong>Input</strong>
+                </label>
 
                 <textarea
                   value={testCase.input}
@@ -255,12 +583,19 @@ const CreateProblem = () => {
                 />
               </div>
 
+              {/* Expected Output */}
               <div style={fieldStyle}>
-                <label>Expected Output</label>
+                <label>
+                  <strong>
+                    Expected Output
+                  </strong>
+                </label>
 
                 <input
                   type="text"
-                  value={testCase.expectedOutput}
+                  value={
+                    testCase.expectedOutput
+                  }
                   onChange={(e) =>
                     handleTestCaseChange(
                       index,
@@ -274,10 +609,20 @@ const CreateProblem = () => {
                 />
               </div>
 
-              <label>
+              {/* Hidden */}
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  marginTop: "15px",
+                }}
+              >
                 <input
                   type="checkbox"
-                  checked={testCase.isHidden}
+                  checked={
+                    testCase.isHidden
+                  }
                   onChange={(e) =>
                     handleTestCaseChange(
                       index,
@@ -287,19 +632,8 @@ const CreateProblem = () => {
                   }
                 />
 
-                {" "}Hidden Test Case
+                Hidden Test Case
               </label>
-
-              <br />
-              <br />
-
-              <button
-                type="button"
-                onClick={() => removeTestCase(index)}
-                style={deleteButtonStyle}
-              >
-                Remove Test Case
-              </button>
             </div>
           ))}
 
@@ -312,23 +646,40 @@ const CreateProblem = () => {
           </button>
         </div>
 
-        <br />
+        {/* ===================================== */}
+        {/* SUBMIT */}
+        {/* ===================================== */}
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={submitButtonStyle}
+        <div
+          style={{
+            marginTop: "35px",
+            marginBottom: "50px",
+          }}
         >
-          {loading
-            ? "Creating Problem..."
-            : "Create Problem"}
-        </button>
-
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              ...submitButtonStyle,
+              opacity: loading ? 0.7 : 1,
+              cursor: loading
+                ? "not-allowed"
+                : "pointer",
+            }}
+          >
+            {loading
+              ? "Creating Problem..."
+              : "Create Problem"}
+          </button>
+        </div>
       </form>
     </div>
   );
 };
 
+// =============================================
+// Styles
+// =============================================
 
 const fieldStyle = {
   display: "flex",
@@ -340,15 +691,36 @@ const fieldStyle = {
 const inputStyle = {
   padding: "12px",
   borderRadius: "6px",
-  border: "1px solid gray",
+  border: "1px solid #d1d5db",
   fontSize: "15px",
+  width: "100%",
+  boxSizing: "border-box",
+};
+
+const exampleCardStyle = {
+  border: "1px solid #d1d5db",
+  padding: "20px",
+  marginBottom: "20px",
+  borderRadius: "10px",
+  background: "#fafafa",
+};
+
+const testCaseCardStyle = {
+  border: "1px solid #d1d5db",
+  padding: "20px",
+  marginBottom: "20px",
+  borderRadius: "10px",
+  background: "#fafafa",
 };
 
 const addButtonStyle = {
   padding: "10px 16px",
-  border: "none",
+  border: "1px solid #2563eb",
+  background: "#fff",
+  color: "#2563eb",
   borderRadius: "6px",
   cursor: "pointer",
+  fontSize: "14px",
 };
 
 const deleteButtonStyle = {
@@ -366,7 +738,6 @@ const submitButtonStyle = {
   color: "white",
   border: "none",
   borderRadius: "8px",
-  cursor: "pointer",
   fontSize: "16px",
 };
 

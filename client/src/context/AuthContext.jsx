@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import api from "../services/api";
 
 const AuthContext = createContext(null);
 
@@ -12,9 +13,9 @@ export const AuthProvider = ({ children }) => {
       const storedUser = localStorage.getItem("user");
       return storedUser ? JSON.parse(storedUser) : null;
     } catch (error) {
-        console.error("Failed to parse stored user:", error);
-        localStorage.removeItem("user");
-        return null;
+      console.error("Failed to parse stored user:", error);
+      localStorage.removeItem("user");
+      return null;
     }
   });
   const login = (token, userData) => {
@@ -32,25 +33,37 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
   useEffect(() => {
-    const handleStorageChange = () => {
-      const storedToken = localStorage.getItem("token");
-      const storedUser = localStorage.getItem("user");
+    const verifyUser = async () => {
+        const storedToken = localStorage.getItem("token");
 
-      setToken(storedToken);
+        if (!storedToken) {
+            setToken(null);
+            setUser(null);
+            return;
+        }
 
-      try {
-        setUser(storedUser ? JSON.parse(storedUser) : null);
-      } catch {
-        setUser(null);
-      }
+        try {
+            const response = await api.get("/auth/me");
+
+            setToken(storedToken);
+            setUser(response.data.user);
+
+            localStorage.setItem(
+                "user",
+                JSON.stringify(response.data.user)
+            );
+
+        } catch (error) {
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+
+            setToken(null);
+            setUser(null);
+        }
     };
 
-    window.addEventListener("storage", handleStorageChange);
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-    };
-  }, []);
+    verifyUser();
+}, []);
   const isAuthenticated = Boolean(token);
   return (
     <AuthContext.Provider

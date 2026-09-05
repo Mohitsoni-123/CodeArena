@@ -21,6 +21,8 @@ import AdminProblems from "./pages/admin/AdminProblems";
 import CreateProblem from "./pages/admin/CreateProblem";
 import EditProblem from "./pages/admin/EditProblem";
 
+import AdminRoute from "./components/AdminRoute";
+
 const App = () => {
   return (
     <BrowserRouter>
@@ -58,15 +60,41 @@ const App = () => {
           }
         />
 
-        
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
+          }
+        />
 
-        <Route path="/admin" element={<AdminDashboard />} />
+        <Route
+          path="/admin/problems"
+          element={
+            <AdminRoute>
+              <AdminProblems />
+            </AdminRoute>
+          }
+        />
 
-        <Route path="/admin/problems" element={<AdminProblems />} />
+        <Route
+          path="/admin/problems/create"
+          element={
+            <AdminRoute>
+              <CreateProblem />
+            </AdminRoute>
+          }
+        />
 
-        <Route path="/admin/problems/create" element={<CreateProblem />} />
-
-        <Route path="/admin/problems/:id/edit" element={<EditProblem />} />
+        <Route
+          path="/admin/problems/:id/edit"
+          element={
+            <AdminRoute>
+              <EditProblem />
+            </AdminRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
