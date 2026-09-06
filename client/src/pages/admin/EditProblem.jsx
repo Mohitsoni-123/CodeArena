@@ -51,9 +51,7 @@ const EditProblem = () => {
         setLoading(true);
         setError("");
 
-        const response = await api.get(
-          `/problems/${id}`
-        );
+        const response = await api.get(`/problems/admin/${id}`);
 
         const problem = response.data.problem;
 

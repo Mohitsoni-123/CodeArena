@@ -275,12 +275,11 @@ export const getProblemSubmissions = async (req, res) => {
 
 export const getSubmissionById = async (req, res) => {
   try {
-    const { submissionId } = req.params;
-
-    const submission = await Submission.findOne({
-      _id: submissionId,
-      user: req.user.userId,
-    }).populate("problem", "title difficulty");
+    const submission = await Submission.findById(
+      req.params.submissionId
+    )
+      .populate("user", "name email")
+      .populate("problem", "title difficulty");
 
     if (!submission) {
       return res.status(404).json({
@@ -288,14 +287,25 @@ export const getSubmissionById = async (req, res) => {
       });
     }
 
-    return res.status(200).json({
+    const isOwner =
+      submission.user?._id?.toString() === req.user.userId.toString();
+
+    const isAdmin = req.user.role === "admin";
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({
+        message: "You are not authorized to view this submission",
+      });
+    }
+
+    res.status(200).json({
       submission,
     });
   } catch (error) {
-    console.error("Get Submission error:", error.message);
+    console.error("Get Submission Error:", error.message);
 
-    return res.status(500).json({
-      message: "Failed to fetch submission",
+    res.status(500).json({
+      message: "Server error",
     });
   }
 };
