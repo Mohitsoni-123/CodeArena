@@ -23,6 +23,8 @@ import EditProblem from "./pages/admin/EditProblem";
 
 import AdminRoute from "./components/AdminRoute";
 
+import NotFound from "./pages/NotFound";
+
 const App = () => {
   return (
     <BrowserRouter>
@@ -95,6 +97,8 @@ const App = () => {
             </AdminRoute>
           }
         />
+
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );

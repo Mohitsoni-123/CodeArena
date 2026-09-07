@@ -15,9 +15,6 @@ const EditProblem = () => {
     starterCode: "",
   });
 
-  // -----------------------------
-  // Examples
-  // -----------------------------
   const [examples, setExamples] = useState([
     {
       input: "",
@@ -26,9 +23,6 @@ const EditProblem = () => {
     },
   ]);
 
-  // -----------------------------
-  // Test Cases
-  // -----------------------------
   const [testCases, setTestCases] = useState([
     {
       input: "",
@@ -41,9 +35,9 @@ const EditProblem = () => {
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState("");
 
-  // =========================================
-  // FETCH EXISTING PROBLEM
-  // =========================================
+  // ============================
+  // FETCH PROBLEM
+  // ============================
 
   useEffect(() => {
     const fetchProblem = async () => {
@@ -51,42 +45,26 @@ const EditProblem = () => {
         setLoading(true);
         setError("");
 
+        // IMPORTANT: Admin endpoint
         const response = await api.get(`/problems/admin/${id}`);
 
         const problem = response.data.problem;
 
-        // -----------------------------
-        // Basic Problem Data
-        // -----------------------------
         setFormData({
           title: problem.title || "",
           description: problem.description || "",
-          difficulty:
-            problem.difficulty || "Easy",
-
-          topics:
-            problem.topics?.join(", ") || "",
-
-          constraints:
-            problem.constraints?.join("\n") || "",
-
-          starterCode:
-            problem.starterCode || "",
+          difficulty: problem.difficulty || "Easy",
+          topics: problem.topics?.join(", ") || "",
+          constraints: problem.constraints?.join("\n") || "",
+          starterCode: problem.starterCode || "",
         });
 
-        // -----------------------------
-        // Existing Examples
-        // -----------------------------
-        if (
-          problem.example &&
-          problem.example.length > 0
-        ) {
+        if (problem.example?.length > 0) {
           setExamples(
             problem.example.map((example) => ({
               input: example.input || "",
               output: example.output || "",
-              explanation:
-                example.explanation || "",
+              explanation: example.explanation || "",
             }))
           );
         } else {
@@ -99,20 +77,12 @@ const EditProblem = () => {
           ]);
         }
 
-        // -----------------------------
-        // Existing Test Cases
-        // -----------------------------
-        if (
-          problem.testCases &&
-          problem.testCases.length > 0
-        ) {
+        if (problem.testCases?.length > 0) {
           setTestCases(
             problem.testCases.map((testCase) => ({
               input: testCase.input || "",
-              expectedOutput:
-                testCase.expectedOutput || "",
-              isHidden:
-                Boolean(testCase.isHidden),
+              expectedOutput: testCase.expectedOutput || "",
+              isHidden: Boolean(testCase.isHidden),
             }))
           );
         } else {
@@ -125,10 +95,7 @@ const EditProblem = () => {
           ]);
         }
       } catch (error) {
-        console.error(
-          "Fetch Problem Error:",
-          error
-        );
+        console.error("Fetch Problem Error:", error);
 
         setError(
           error.response?.data?.message ||
@@ -142,9 +109,9 @@ const EditProblem = () => {
     fetchProblem();
   }, [id]);
 
-  // =========================================
-  // BASIC FORM CHANGE
-  // =========================================
+  // ============================
+  // BASIC CHANGE
+  // ============================
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -155,15 +122,11 @@ const EditProblem = () => {
     }));
   };
 
-  // =========================================
-  // EXAMPLE FUNCTIONS
-  // =========================================
+  // ============================
+  // EXAMPLES
+  // ============================
 
-  const handleExampleChange = (
-    index,
-    field,
-    value
-  ) => {
+  const handleExampleChange = (index, field, value) => {
     setExamples((prev) =>
       prev.map((example, i) =>
         i === index
@@ -189,9 +152,7 @@ const EditProblem = () => {
 
   const removeExample = (index) => {
     if (examples.length === 1) {
-      alert(
-        "At least one example is required"
-      );
+      alert("At least one example is required");
       return;
     }
 
@@ -200,15 +161,11 @@ const EditProblem = () => {
     );
   };
 
-  // =========================================
-  // TEST CASE FUNCTIONS
-  // =========================================
+  // ============================
+  // TEST CASES
+  // ============================
 
-  const handleTestCaseChange = (
-    index,
-    field,
-    value
-  ) => {
+  const handleTestCaseChange = (index, field, value) => {
     setTestCases((prev) =>
       prev.map((testCase, i) =>
         i === index
@@ -234,9 +191,7 @@ const EditProblem = () => {
 
   const removeTestCase = (index) => {
     if (testCases.length === 1) {
-      alert(
-        "At least one test case is required"
-      );
+      alert("At least one test case is required");
       return;
     }
 
@@ -245,9 +200,9 @@ const EditProblem = () => {
     );
   };
 
-  // =========================================
-  // UPDATE PROBLEM
-  // =========================================
+  // ============================
+  // UPDATE
+  // ============================
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -256,9 +211,6 @@ const EditProblem = () => {
       setUpdating(true);
       setError("");
 
-      // -----------------------------
-      // Validate Examples
-      // -----------------------------
       const validExamples = examples.filter(
         (example) =>
           example.input.trim() ||
@@ -266,41 +218,27 @@ const EditProblem = () => {
           example.explanation.trim()
       );
 
-      // -----------------------------
-      // Validate Test Cases
-      // -----------------------------
-      const validTestCases =
-        testCases.filter(
-          (testCase) =>
-            testCase.input.trim() &&
-            testCase.expectedOutput.trim()
-        );
+      const validTestCases = testCases.filter(
+        (testCase) =>
+          testCase.input.trim() &&
+          testCase.expectedOutput.trim()
+      );
 
       if (validExamples.length === 0) {
-        setError(
-          "Please add at least one example."
-        );
+        setError("Please add at least one example.");
         setUpdating(false);
         return;
       }
 
       if (validTestCases.length === 0) {
-        setError(
-          "Please add at least one valid test case."
-        );
+        setError("Please add at least one valid test case.");
         setUpdating(false);
         return;
       }
 
-      // -----------------------------
-      // Problem Data
-      // -----------------------------
       const problemData = {
         title: formData.title.trim(),
-
-        description:
-          formData.description.trim(),
-
+        description: formData.description.trim(),
         difficulty: formData.difficulty,
 
         topics: formData.topics
@@ -308,39 +246,26 @@ const EditProblem = () => {
           .map((topic) => topic.trim())
           .filter(Boolean),
 
-        constraints:
-          formData.constraints
-            .split("\n")
-            .map((constraint) =>
-              constraint.trim()
-            )
-            .filter(Boolean),
+        constraints: formData.constraints
+          .split("\n")
+          .map((constraint) => constraint.trim())
+          .filter(Boolean),
 
-        starterCode:
-          formData.starterCode,
+        starterCode: formData.starterCode,
 
-        // IMPORTANT:
-        // Backend uses "example"
         example: validExamples,
-
         testCases: validTestCases,
       };
 
-      await api.put(
-        `/problems/${id}`,
-        problemData
-      );
+      await api.put(`/problems/${id}`, problemData);
 
-      alert(
-        "Problem updated successfully 🎉"
-      );
+      alert("Problem updated successfully 🎉");
 
       navigate("/admin/problems");
     } catch (error) {
       console.error(
         "Update Problem Error:",
-        error.response?.data ||
-          error.message
+        error.response?.data || error.message
       );
 
       setError(
@@ -352,563 +277,562 @@ const EditProblem = () => {
     }
   };
 
-  // =========================================
+  // ============================
   // LOADING
-  // =========================================
+  // ============================
 
   if (loading) {
     return (
-      <div style={loadingStyle}>
-        <h2>Loading problem...</h2>
+      <div className="min-h-screen bg-[#f6f8fc] p-4 sm:p-6 lg:p-8">
+        <div className="mx-auto max-w-6xl animate-pulse">
+          <div className="h-8 w-64 rounded-lg bg-slate-200" />
+          <div className="mt-3 h-4 w-96 max-w-full rounded bg-slate-200" />
+
+          <div className="mt-8 space-y-6">
+            {[1, 2, 3, 4].map((item) => (
+              <div
+                key={item}
+                className="h-40 rounded-2xl bg-white shadow-sm"
+              />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
-  // =========================================
-  // ERROR
-  // =========================================
+  // ============================
+  // FETCH ERROR
+  // ============================
 
   if (error && !formData.title) {
     return (
-      <div style={loadingStyle}>
-        <h2>{error}</h2>
+      <div className="min-h-screen bg-[#f6f8fc] px-4 py-10">
+        <div className="mx-auto max-w-xl rounded-2xl border border-red-200 bg-white p-8 text-center shadow-sm">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-50 text-2xl">
+            ⚠️
+          </div>
+
+          <h2 className="mt-4 text-xl font-bold text-slate-900">
+            Unable to load problem
+          </h2>
+
+          <p className="mt-2 text-sm text-slate-500">
+            {error}
+          </p>
+
+          <button
+            onClick={() => navigate("/admin/problems")}
+            className="mt-6 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+          >
+            Back to Problems
+          </button>
+        </div>
       </div>
     );
   }
 
-  // =========================================
-  // UI
-  // =========================================
-
   return (
-    <div style={containerStyle}>
-      <h1>Edit Problem</h1>
+    <div className="min-h-screen bg-[#f6f8fc]">
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
 
-      <p>
-        Update your CodeArena coding problem.
-      </p>
+        {/* ================= HEADER ================= */}
 
-      {/* ERROR MESSAGE */}
+        <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700">
+              <span>✏️</span>
+              ADMIN • EDIT PROBLEM
+            </div>
 
-      {error && (
-        <div style={errorStyle}>
-          {error}
-        </div>
-      )}
+            <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+              Edit Problem
+            </h1>
 
-      <form onSubmit={handleSubmit}>
-        {/* ================================= */}
-        {/* TITLE */}
-        {/* ================================= */}
-
-        <div style={fieldStyle}>
-          <label>
-            <strong>Problem Title</strong>
-          </label>
-
-          <input
-            type="text"
-            name="title"
-            value={formData.title}
-            onChange={handleChange}
-            required
-            style={inputStyle}
-          />
-        </div>
-
-        {/* ================================= */}
-        {/* DESCRIPTION */}
-        {/* ================================= */}
-
-        <div style={fieldStyle}>
-          <label>
-            <strong>Description</strong>
-          </label>
-
-          <textarea
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            rows="6"
-            required
-            style={inputStyle}
-          />
-        </div>
-
-        {/* ================================= */}
-        {/* DIFFICULTY */}
-        {/* ================================= */}
-
-        <div style={fieldStyle}>
-          <label>
-            <strong>Difficulty</strong>
-          </label>
-
-          <select
-            name="difficulty"
-            value={formData.difficulty}
-            onChange={handleChange}
-            style={inputStyle}
-          >
-            <option value="Easy">
-              Easy
-            </option>
-
-            <option value="Medium">
-              Medium
-            </option>
-
-            <option value="Hard">
-              Hard
-            </option>
-          </select>
-        </div>
-
-        {/* ================================= */}
-        {/* TOPICS */}
-        {/* ================================= */}
-
-        <div style={fieldStyle}>
-          <label>
-            <strong>Topics</strong>
-          </label>
-
-          <input
-            type="text"
-            name="topics"
-            value={formData.topics}
-            onChange={handleChange}
-            placeholder="Array, Hash Table, Two Pointer"
-            style={inputStyle}
-          />
-
-          <small>
-            Separate topics with commas.
-          </small>
-        </div>
-
-        {/* ================================= */}
-        {/* CONSTRAINTS */}
-        {/* ================================= */}
-
-        <div style={fieldStyle}>
-          <label>
-            <strong>Constraints</strong>
-          </label>
-
-          <textarea
-            name="constraints"
-            value={formData.constraints}
-            onChange={handleChange}
-            rows="5"
-            style={inputStyle}
-          />
-
-          <small>
-            Write each constraint on a new line.
-          </small>
-        </div>
-
-        {/* ================================= */}
-        {/* STARTER CODE */}
-        {/* ================================= */}
-
-        <div style={fieldStyle}>
-          <label>
-            <strong>Starter Code</strong>
-          </label>
-
-          <textarea
-            name="starterCode"
-            value={formData.starterCode}
-            onChange={handleChange}
-            rows="10"
-            style={{
-              ...inputStyle,
-              fontFamily: "monospace",
-            }}
-          />
-        </div>
-
-        {/* ================================= */}
-        {/* EXAMPLES */}
-        {/* ================================= */}
-
-        <div style={sectionStyle}>
-          <h2>Examples</h2>
-
-          <p style={mutedTextStyle}>
-            These examples are visible to users
-            on the problem page.
-          </p>
-
-          {examples.map(
-            (example, index) => (
-              <div
-                key={index}
-                style={cardStyle}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent:
-                      "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <h3>
-                    Example {index + 1}
-                  </h3>
-
-                  {examples.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        removeExample(index)
-                      }
-                      style={
-                        deleteButtonStyle
-                      }
-                    >
-                      Remove
-                    </button>
-                  )}
-                </div>
-
-                {/* Input */}
-
-                <div style={fieldStyle}>
-                  <label>
-                    <strong>
-                      Input
-                    </strong>
-                  </label>
-
-                  <textarea
-                    value={example.input}
-                    onChange={(e) =>
-                      handleExampleChange(
-                        index,
-                        "input",
-                        e.target.value
-                      )
-                    }
-                    rows="3"
-                    required
-                    style={inputStyle}
-                  />
-                </div>
-
-                {/* Output */}
-
-                <div style={fieldStyle}>
-                  <label>
-                    <strong>
-                      Output
-                    </strong>
-                  </label>
-
-                  <textarea
-                    value={example.output}
-                    onChange={(e) =>
-                      handleExampleChange(
-                        index,
-                        "output",
-                        e.target.value
-                      )
-                    }
-                    rows="3"
-                    required
-                    style={inputStyle}
-                  />
-                </div>
-
-                {/* Explanation */}
-
-                <div style={fieldStyle}>
-                  <label>
-                    <strong>
-                      Explanation
-                    </strong>
-                  </label>
-
-                  <textarea
-                    value={
-                      example.explanation
-                    }
-                    onChange={(e) =>
-                      handleExampleChange(
-                        index,
-                        "explanation",
-                        e.target.value
-                      )
-                    }
-                    rows="4"
-                    placeholder="Explain the example..."
-                    style={inputStyle}
-                  />
-                </div>
-              </div>
-            )
-          )}
+            <p className="mt-2 text-sm text-slate-500 sm:text-base">
+              Update your CodeArena coding problem and test cases.
+            </p>
+          </div>
 
           <button
             type="button"
-            onClick={addExample}
-            style={addButtonStyle}
+            onClick={() => navigate("/admin/problems")}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
           >
-            + Add Example
+            ← Back to Problems
           </button>
         </div>
 
-        {/* ================================= */}
-        {/* TEST CASES */}
-        {/* ================================= */}
+        {/* ================= ERROR ================= */}
 
-        <div style={sectionStyle}>
-          <h2>Test Cases</h2>
+        {error && (
+          <div className="mb-6 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
+            <span className="text-lg">⚠️</span>
 
-          <p style={mutedTextStyle}>
-            These test cases are used to
-            evaluate submitted code.
-          </p>
+            <div>
+              <p className="font-semibold">Something went wrong</p>
+              <p className="mt-1 text-sm">{error}</p>
+            </div>
+          </div>
+        )}
 
-          {testCases.map(
-            (testCase, index) => (
-              <div
-                key={index}
-                style={cardStyle}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent:
-                      "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <h3>
-                    Test Case {index + 1}
-                  </h3>
+        <form onSubmit={handleSubmit} className="space-y-6">
 
-                  {testCases.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        removeTestCase(index)
-                      }
-                      style={
-                        deleteButtonStyle
-                      }
-                    >
-                      Remove
-                    </button>
-                  )}
+          {/* ================= BASIC INFO ================= */}
+
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="border-b border-slate-100 px-5 py-5 sm:px-7">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-lg">
+                  📝
                 </div>
 
-                {/* Input */}
+                <div>
+                  <h2 className="font-bold text-slate-900">
+                    Basic Information
+                  </h2>
 
-                <div style={fieldStyle}>
-                  <label>
-                    <strong>
-                      Input
-                    </strong>
-                  </label>
-
-                  <textarea
-                    value={testCase.input}
-                    onChange={(e) =>
-                      handleTestCaseChange(
-                        index,
-                        "input",
-                        e.target.value
-                      )
-                    }
-                    rows="3"
-                    required
-                    style={inputStyle}
-                  />
+                  <p className="text-sm text-slate-500">
+                    Define the problem title and description.
+                  </p>
                 </div>
+              </div>
+            </div>
 
-                {/* Expected Output */}
+            <div className="space-y-5 p-5 sm:p-7">
 
-                <div style={fieldStyle}>
-                  <label>
-                    <strong>
-                      Expected Output
-                    </strong>
-                  </label>
+              {/* TITLE */}
 
-                  <input
-                    type="text"
-                    value={
-                      testCase.expectedOutput
-                    }
-                    onChange={(e) =>
-                      handleTestCaseChange(
-                        index,
-                        "expectedOutput",
-                        e.target.value
-                      )
-                    }
-                    required
-                    style={inputStyle}
-                  />
-                </div>
-
-                {/* Hidden */}
-
-                <label
-                  style={{
-                    display: "flex",
-                    alignItems:
-                      "center",
-                    gap: "8px",
-                    marginTop: "15px",
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={
-                      testCase.isHidden
-                    }
-                    onChange={(e) =>
-                      handleTestCaseChange(
-                        index,
-                        "isHidden",
-                        e.target.checked
-                      )
-                    }
-                  />
-
-                  Hidden Test Case
+              <div>
+                <label className="mb-2 block text-sm font-bold text-slate-700">
+                  Problem Title
                 </label>
+
+                <input
+                  type="text"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleChange}
+                  required
+                  placeholder="e.g. Two Sum"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                />
               </div>
-            )
-          )}
 
-          <button
-            type="button"
-            onClick={addTestCase}
-            style={addButtonStyle}
-          >
-            + Add Test Case
-          </button>
-        </div>
+              {/* DIFFICULTY */}
 
-        {/* ================================= */}
-        {/* SAVE */}
-        {/* ================================= */}
+              <div>
+                <label className="mb-2 block text-sm font-bold text-slate-700">
+                  Difficulty
+                </label>
 
-        <div
-          style={{
-            marginTop: "35px",
-            marginBottom: "50px",
-          }}
-        >
-          <button
-            type="submit"
-            disabled={updating}
-            style={{
-              ...submitButtonStyle,
-              opacity: updating ? 0.7 : 1,
-              cursor: updating
-                ? "not-allowed"
-                : "pointer",
-            }}
-          >
-            {updating
-              ? "Updating Problem..."
-              : "Save Changes"}
-          </button>
-        </div>
-      </form>
+                <select
+                  name="difficulty"
+                  value={formData.difficulty}
+                  onChange={handleChange}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 sm:max-w-xs"
+                >
+                  <option value="Easy">Easy</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Hard">Hard</option>
+                </select>
+              </div>
+
+              {/* DESCRIPTION */}
+
+              <div>
+                <label className="mb-2 block text-sm font-bold text-slate-700">
+                  Description
+                </label>
+
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  rows={7}
+                  required
+                  placeholder="Describe the problem clearly..."
+                  className="w-full resize-y rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                />
+              </div>
+
+              {/* TOPICS */}
+
+              <div>
+                <label className="mb-2 block text-sm font-bold text-slate-700">
+                  Topics
+                </label>
+
+                <input
+                  type="text"
+                  name="topics"
+                  value={formData.topics}
+                  onChange={handleChange}
+                  placeholder="Array, Hash Map, Two Pointers"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                />
+
+                <p className="mt-2 text-xs text-slate-400">
+                  Separate multiple topics using commas.
+                </p>
+              </div>
+
+              {/* CONSTRAINTS */}
+
+              <div>
+                <label className="mb-2 block text-sm font-bold text-slate-700">
+                  Constraints
+                </label>
+
+                <textarea
+                  name="constraints"
+                  value={formData.constraints}
+                  onChange={handleChange}
+                  rows={5}
+                  placeholder={"1 ≤ n ≤ 10⁵\n-10⁹ ≤ nums[i] ≤ 10⁹"}
+                  className="w-full resize-y rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                />
+
+                <p className="mt-2 text-xs text-slate-400">
+                  Write each constraint on a new line.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* ================= STARTER CODE ================= */}
+
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="border-b border-slate-100 px-5 py-5 sm:px-7">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-lg">
+                  💻
+                </div>
+
+                <div>
+                  <h2 className="font-bold text-slate-900">
+                    Starter Code
+                  </h2>
+
+                  <p className="text-sm text-slate-500">
+                    Provide the initial code shown to users.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-5 sm:p-7">
+              <textarea
+                name="starterCode"
+                value={formData.starterCode}
+                onChange={handleChange}
+                rows={12}
+                placeholder="// Write starter code here..."
+                className="w-full resize-y rounded-xl border border-slate-800 bg-[#0b1120] px-4 py-4 font-mono text-sm leading-6 text-slate-100 outline-none placeholder:text-slate-500 focus:ring-4 focus:ring-blue-500/10"
+              />
+            </div>
+          </section>
+
+          {/* ================= EXAMPLES ================= */}
+
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-lg">
+                  🧪
+                </div>
+
+                <div>
+                  <h2 className="font-bold text-slate-900">
+                    Examples
+                  </h2>
+
+                  <p className="text-sm text-slate-500">
+                    Examples visible to users on the problem page.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={addExample}
+                className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
+              >
+                + Add Example
+              </button>
+            </div>
+
+            <div className="space-y-5 p-5 sm:p-7">
+              {examples.map((example, index) => (
+                <div
+                  key={index}
+                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5"
+                >
+                  <div className="mb-5 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-xs font-black text-slate-700 shadow-sm">
+                        {index + 1}
+                      </span>
+
+                      <h3 className="font-bold text-slate-900">
+                        Example {index + 1}
+                      </h3>
+                    </div>
+
+                    {examples.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeExample(index)}
+                        className="rounded-lg px-3 py-2 text-xs font-bold text-red-600 transition hover:bg-red-50"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="grid gap-5 lg:grid-cols-2">
+
+                    {/* INPUT */}
+
+                    <div>
+                      <label className="mb-2 block text-sm font-bold text-slate-700">
+                        Input
+                      </label>
+
+                      <textarea
+                        value={example.input}
+                        onChange={(e) =>
+                          handleExampleChange(
+                            index,
+                            "input",
+                            e.target.value
+                          )
+                        }
+                        rows={4}
+                        required
+                        placeholder="Example input..."
+                        className="w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 font-mono text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                      />
+                    </div>
+
+                    {/* OUTPUT */}
+
+                    <div>
+                      <label className="mb-2 block text-sm font-bold text-slate-700">
+                        Output
+                      </label>
+
+                      <textarea
+                        value={example.output}
+                        onChange={(e) =>
+                          handleExampleChange(
+                            index,
+                            "output",
+                            e.target.value
+                          )
+                        }
+                        rows={4}
+                        required
+                        placeholder="Example output..."
+                        className="w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 font-mono text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                      />
+                    </div>
+
+                    {/* EXPLANATION */}
+
+                    <div className="lg:col-span-2">
+                      <label className="mb-2 block text-sm font-bold text-slate-700">
+                        Explanation
+                      </label>
+
+                      <textarea
+                        value={example.explanation}
+                        onChange={(e) =>
+                          handleExampleChange(
+                            index,
+                            "explanation",
+                            e.target.value
+                          )
+                        }
+                        rows={4}
+                        placeholder="Explain why this output is correct..."
+                        className="w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* ================= TEST CASES ================= */}
+
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-lg">
+                  🔐
+                </div>
+
+                <div>
+                  <h2 className="font-bold text-slate-900">
+                    Test Cases
+                  </h2>
+
+                  <p className="text-sm text-slate-500">
+                    Used by CodeArena to evaluate submitted code.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={addTestCase}
+                className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-2.5 text-sm font-bold text-orange-700 transition hover:bg-orange-100"
+              >
+                + Add Test Case
+              </button>
+            </div>
+
+            <div className="space-y-5 p-5 sm:p-7">
+              {testCases.map((testCase, index) => (
+                <div
+                  key={index}
+                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5"
+                >
+                  <div className="mb-5 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-xs font-black text-slate-700 shadow-sm">
+                        {index + 1}
+                      </span>
+
+                      <h3 className="font-bold text-slate-900">
+                        Test Case {index + 1}
+                      </h3>
+                    </div>
+
+                    {testCases.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeTestCase(index)}
+                        className="rounded-lg px-3 py-2 text-xs font-bold text-red-600 transition hover:bg-red-50"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="grid gap-5 lg:grid-cols-2">
+
+                    {/* INPUT */}
+
+                    <div>
+                      <label className="mb-2 block text-sm font-bold text-slate-700">
+                        Input
+                      </label>
+
+                      <textarea
+                        value={testCase.input}
+                        onChange={(e) =>
+                          handleTestCaseChange(
+                            index,
+                            "input",
+                            e.target.value
+                          )
+                        }
+                        rows={4}
+                        required
+                        placeholder="Test input..."
+                        className="w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 font-mono text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                      />
+                    </div>
+
+                    {/* EXPECTED OUTPUT */}
+
+                    <div>
+                      <label className="mb-2 block text-sm font-bold text-slate-700">
+                        Expected Output
+                      </label>
+
+                      <textarea
+                        value={testCase.expectedOutput}
+                        onChange={(e) =>
+                          handleTestCaseChange(
+                            index,
+                            "expectedOutput",
+                            e.target.value
+                          )
+                        }
+                        rows={4}
+                        required
+                        placeholder="Expected output..."
+                        className="w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 font-mono text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                      />
+                    </div>
+                  </div>
+
+                  {/* HIDDEN */}
+
+                  <label className="mt-5 flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={testCase.isHidden}
+                      onChange={(e) =>
+                        handleTestCaseChange(
+                          index,
+                          "isHidden",
+                          e.target.checked
+                        )
+                      }
+                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+
+                    <div>
+                      <p className="text-sm font-bold text-slate-800">
+                        Hidden Test Case
+                      </p>
+
+                      <p className="text-xs text-slate-400">
+                        Users will not see this test case.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* ================= ACTIONS ================= */}
+
+          <div className="flex flex-col-reverse gap-3 pb-10 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={() => navigate("/admin/problems")}
+              disabled={updating}
+              className="rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              disabled={updating}
+              className="rounded-xl bg-slate-900 px-7 py-3 text-sm font-bold text-white shadow-lg shadow-slate-900/10 transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {updating ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  Updating Problem...
+                </span>
+              ) : (
+                "✓ Save Changes"
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
-};
-
-// =============================================
-// STYLES
-// =============================================
-
-const containerStyle = {
-  padding: "30px",
-  maxWidth: "900px",
-  margin: "auto",
-};
-
-const loadingStyle = {
-  padding: "40px",
-  textAlign: "center",
-};
-
-const fieldStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "8px",
-  marginTop: "20px",
-};
-
-const inputStyle = {
-  padding: "12px",
-  borderRadius: "6px",
-  border: "1px solid #d1d5db",
-  fontSize: "15px",
-  width: "100%",
-  boxSizing: "border-box",
-};
-
-const sectionStyle = {
-  marginTop: "35px",
-};
-
-const cardStyle = {
-  border: "1px solid #d1d5db",
-  padding: "20px",
-  marginBottom: "20px",
-  borderRadius: "10px",
-  background: "#fafafa",
-};
-
-const mutedTextStyle = {
-  color: "#666",
-};
-
-const errorStyle = {
-  marginTop: "15px",
-  padding: "12px",
-  borderRadius: "8px",
-  background: "#fee2e2",
-  color: "#b91c1c",
-  border: "1px solid #fecaca",
-};
-
-const addButtonStyle = {
-  padding: "10px 16px",
-  border: "1px solid #2563eb",
-  background: "#fff",
-  color: "#2563eb",
-  borderRadius: "6px",
-  cursor: "pointer",
-  fontSize: "14px",
-};
-
-const deleteButtonStyle = {
-  padding: "8px 14px",
-  background: "#ef4444",
-  color: "white",
-  border: "none",
-  borderRadius: "6px",
-  cursor: "pointer",
-};
-
-const submitButtonStyle = {
-  padding: "14px 25px",
-  background: "#2563eb",
-  color: "white",
-  border: "none",
-  borderRadius: "8px",
-  fontSize: "16px",
 };
 
 export default EditProblem;
