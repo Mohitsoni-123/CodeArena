@@ -25,6 +25,8 @@ import AdminRoute from "./components/AdminRoute";
 
 import NotFound from "./pages/NotFound";
 
+import Footer from "./components/Footer";
+
 const App = () => {
   return (
     <BrowserRouter>
@@ -100,6 +102,8 @@ const App = () => {
 
         <Route path="*" element={<NotFound />} />
       </Routes>
+
+      <Footer />
     </BrowserRouter>
   );
 };
