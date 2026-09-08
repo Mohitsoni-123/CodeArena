@@ -21,21 +21,52 @@ export const createSubmission = async (req, res) => {
       });
     }
 
-    if (!problem.testCases || problem.testCases.length === 0) {
+    const examples = Array.isArray(problem.example) ? problem.example : [];
+
+    const testCases = Array.isArray(problem.testCases) ? problem.testCases : [];
+
+    if (examples.length === 0 && testCases.length === 0) {
       return res.status(400).json({
         message: "This problem has no test cases",
       });
     }
 
+    // =========================================
+    // COMBINE EXAMPLES + TEST CASES
+    // =========================================
+
+    const allTestCases = [
+      ...examples.map((example, index) => ({
+        type: "Example",
+        number: index + 1,
+        input: example.input,
+        expectedOutput: example.output,
+        isHidden: false,
+      })),
+
+      ...testCases.map((testCase, index) => ({
+        type: "Test Case",
+        number: index + 1,
+        input: testCase.input,
+        expectedOutput: testCase.expectedOutput,
+        isHidden: testCase.isHidden,
+      })),
+    ];
+
     let passedTestCases = 0;
     let finalStatus = "Accepted";
+
     let totalRuntime = 0;
     let totalMemory = 0;
     let submissionError = "";
 
     const testCaseResults = [];
 
-    for (const testCase of problem.testCases) {
+    // =========================================
+    // RUN ALL EXAMPLES + TEST CASES
+    // =========================================
+
+    for (const testCase of allTestCases) {
       const result = await executeCode({
         language,
         code,
@@ -46,34 +77,64 @@ export const createSubmission = async (req, res) => {
       const expectedOutput = (testCase.expectedOutput || "").trim();
 
       totalRuntime += Number(result.cpuTime || 0);
+
       totalMemory = Math.max(totalMemory, Number(result.memory || 0));
 
       let passed = false;
+      let status = "Wrong Answer";
+      let error = "";
 
-      // Compilation Error
+      // =========================================
+      // COMPILATION ERROR
+      // =========================================
+
       if (result.statusCode !== 200) {
         finalStatus = "Compilation Error";
+
         submissionError = result.error || "Compilation error";
+
+        status = "Compilation Error";
+        error = result.error || "Compilation error";
       }
 
-      // Runtime / execution error
+      // =========================================
+      // RUNTIME ERROR
+      // =========================================
       else if (result.error) {
         finalStatus = "Runtime Error";
+
         submissionError = result.error;
+
+        status = "Runtime Error";
+        error = result.error;
       }
 
-      // Output comparison
+      // =========================================
+      // OUTPUT CHECK
+      // =========================================
       else {
         passed = actualOutput === expectedOutput;
 
         if (passed) {
           passedTestCases++;
-        } else if (finalStatus === "Accepted") {
-          finalStatus = "Wrong Answer";
+          status = "Accepted";
+        } else {
+          if (finalStatus === "Accepted") {
+            finalStatus = "Wrong Answer";
+          }
+
+          status = "Wrong Answer";
         }
       }
 
+      // =========================================
+      // HIDDEN TEST CASE SECURITY
+      // =========================================
+
       testCaseResults.push({
+        type: testCase.type,
+        number: testCase.number,
+
         input: testCase.isHidden ? "Hidden Test Case" : testCase.input,
 
         expectedOutput: testCase.isHidden ? "Hidden" : expectedOutput,
@@ -81,9 +142,15 @@ export const createSubmission = async (req, res) => {
         actualOutput: testCase.isHidden ? "Hidden" : actualOutput,
 
         passed,
+        status,
+        error,
+        isHidden: testCase.isHidden,
       });
 
-      // Stop testing if code cannot compile/run
+      // =========================================
+      // STOP ON COMPILATION / RUNTIME ERROR
+      // =========================================
+
       if (
         finalStatus === "Compilation Error" ||
         finalStatus === "Runtime Error"
@@ -92,10 +159,23 @@ export const createSubmission = async (req, res) => {
       }
     }
 
-    // If every test case passed
-    if (passedTestCases === problem.testCases.length) {
+    // =========================================
+    // TOTAL TEST CASES
+    // =========================================
+
+    const totalTestCases = allTestCases.length;
+
+    // =========================================
+    // ACCEPTED ONLY IF EVERYTHING PASSED
+    // =========================================
+
+    if (passedTestCases === totalTestCases && totalTestCases > 0) {
       finalStatus = "Accepted";
     }
+
+    // =========================================
+    // SAVE SUBMISSION
+    // =========================================
 
     const submission = await Submission.create({
       user: req.user.userId,
@@ -106,7 +186,7 @@ export const createSubmission = async (req, res) => {
       runtime: totalRuntime,
       memory: totalMemory,
       testCasesPassed: passedTestCases,
-      totalTestCases: problem.testCases.length,
+      totalTestCases,
       error: submissionError,
     });
 
@@ -121,12 +201,14 @@ export const createSubmission = async (req, res) => {
 
       if (user) {
         const today = new Date();
+
         today.setHours(0, 0, 0, 0);
 
         if (!user.lastSubmissionDate) {
           user.streak = 1;
         } else {
           const lastDate = new Date(user.lastSubmissionDate);
+
           lastDate.setHours(0, 0, 0, 0);
 
           const differenceInDays = Math.floor(
@@ -158,27 +240,45 @@ export const createSubmission = async (req, res) => {
       }
     }
 
+    // =========================================
+    // RESPONSE
+    // =========================================
+
     return res.status(201).json({
       message: "Submission evaluated successfully",
+
       status: finalStatus,
+
       passedTestCases,
-      totalTestCases: problem.testCases.length,
+
+      totalTestCases,
+
       testCaseResults,
+
       runtime: totalRuntime,
+
       memory: totalMemory,
+
       error: submissionError,
+
       streak: updatedStreak,
+
       submission,
     });
   } catch (error) {
     console.error("========== SUBMISSION ERROR ==========");
+
     console.error("Message:", error.message);
+
     console.error("Response:", error.response?.data);
+
     console.error("Stack:", error.stack);
+
     console.error("======================================");
 
     return res.status(500).json({
       message: "Code execution failed",
+
       error:
         error.response?.data?.message ||
         error.response?.data?.error ||
@@ -275,9 +375,7 @@ export const getProblemSubmissions = async (req, res) => {
 
 export const getSubmissionById = async (req, res) => {
   try {
-    const submission = await Submission.findById(
-      req.params.submissionId
-    )
+    const submission = await Submission.findById(req.params.submissionId)
       .populate("user", "name email")
       .populate("problem", "title difficulty");
 
