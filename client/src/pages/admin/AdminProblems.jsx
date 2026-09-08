@@ -1,5 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import {
+  AlertCircle,
+  ArrowUpRight,
+  CheckCircle2,
+  ChevronRight,
+  CirclePlus,
+  Code2,
+  FileCode2,
+  Filter,
+  ListFilter,
+  Pencil,
+  RefreshCw,
+  Search,
+  Trash2,
+  X,
+  Zap,
+} from "lucide-react";
 import api from "../../services/api";
 
 const AdminProblems = () => {
@@ -19,6 +36,7 @@ const AdminProblems = () => {
       setProblems(response.data.problems || []);
     } catch (error) {
       console.error("Fetch Problems Error:", error);
+
       setError(
         error.response?.data?.message ||
           "Failed to fetch problems"
@@ -57,12 +75,13 @@ const AdminProblems = () => {
 
   const filteredProblems = useMemo(() => {
     return problems.filter((problem) => {
+      const query = search.toLowerCase().trim();
+
       const matchesSearch =
-        problem.title
-          ?.toLowerCase()
-          .includes(search.toLowerCase()) ||
+        !query ||
+        problem.title?.toLowerCase().includes(query) ||
         problem.topics?.some((topic) =>
-          topic.toLowerCase().includes(search.toLowerCase())
+          topic.toLowerCase().includes(query)
         );
 
       const matchesDifficulty =
@@ -73,87 +92,136 @@ const AdminProblems = () => {
     });
   }, [problems, search, difficulty]);
 
-  const getDifficultyStyle = (level) => {
+  const totalProblems = problems.length;
+
+  const easyProblems = problems.filter(
+    (problem) => problem.difficulty === "Easy"
+  ).length;
+
+  const mediumProblems = problems.filter(
+    (problem) => problem.difficulty === "Medium"
+  ).length;
+
+  const hardProblems = problems.filter(
+    (problem) => problem.difficulty === "Hard"
+  ).length;
+
+  const clearFilters = () => {
+    setSearch("");
+    setDifficulty("All");
+  };
+
+  const getDifficultyConfig = (level) => {
     if (level === "Easy") {
-      return "bg-emerald-50 text-emerald-700 border-emerald-200";
+      return {
+        text: "text-emerald-400",
+        bg: "bg-emerald-500/10",
+        border: "border-emerald-500/20",
+        dot: "bg-emerald-400",
+      };
     }
 
     if (level === "Medium") {
-      return "bg-amber-50 text-amber-700 border-amber-200";
+      return {
+        text: "text-amber-400",
+        bg: "bg-amber-500/10",
+        border: "border-amber-500/20",
+        dot: "bg-amber-400",
+      };
     }
 
     if (level === "Hard") {
-      return "bg-red-50 text-red-700 border-red-200";
+      return {
+        text: "text-rose-400",
+        bg: "bg-rose-500/10",
+        border: "border-rose-500/20",
+        dot: "bg-rose-400",
+      };
     }
 
-    return "bg-slate-50 text-slate-600 border-slate-200";
+    return {
+      text: "text-slate-400",
+      bg: "bg-slate-500/10",
+      border: "border-slate-500/20",
+      dot: "bg-slate-400",
+    };
   };
+
+  /* ================= LOADING ================= */
 
   if (loading) {
     return (
-      <div className="min-h-[calc(100vh-80px)] bg-slate-50 p-4 sm:p-6 lg:p-8">
-        <div className="mx-auto max-w-7xl">
+      <div className="min-h-[calc(100vh-72px)] bg-[#080b12] text-white">
+        <div className="mx-auto max-w-[1500px] p-4 sm:p-6 lg:p-8">
           <div className="animate-pulse space-y-6">
-            <div className="flex justify-between gap-4">
-              <div>
-                <div className="h-8 w-48 rounded-lg bg-slate-200" />
-                <div className="mt-3 h-4 w-32 rounded bg-slate-200" />
+
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-3">
+                <div className="h-4 w-32 rounded bg-slate-800" />
+                <div className="h-9 w-72 rounded-lg bg-slate-800" />
+                <div className="h-4 w-96 max-w-full rounded bg-slate-800" />
               </div>
 
-              <div className="h-11 w-40 rounded-xl bg-slate-200" />
+              <div className="h-12 w-44 rounded-xl bg-slate-800" />
             </div>
 
-            <div className="h-20 rounded-2xl bg-slate-200" />
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              {[1, 2, 3, 4].map((item) => (
+                <div
+                  key={item}
+                  className="h-28 rounded-2xl border border-slate-800 bg-[#0d111a]"
+                />
+              ))}
+            </div>
 
-            <div className="rounded-2xl bg-white p-6 shadow-sm">
-              <div className="space-y-5">
-                {[1, 2, 3, 4].map((item) => (
+            <div className="h-20 rounded-2xl border border-slate-800 bg-[#0d111a]" />
+
+            <div className="overflow-hidden rounded-2xl border border-slate-800 bg-[#0d111a]">
+              <div className="space-y-5 p-6">
+                {[1, 2, 3, 4, 5].map((item) => (
                   <div
                     key={item}
-                    className="h-12 rounded-lg bg-slate-100"
+                    className="h-14 rounded-xl bg-slate-800/70"
                   />
                 ))}
               </div>
             </div>
+
           </div>
         </div>
       </div>
     );
   }
 
+  /* ================= ERROR ================= */
+
   if (error) {
     return (
-      <div className="min-h-[calc(100vh-80px)] bg-slate-50 p-4 sm:p-6 lg:p-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-              <svg
-                className="h-6 w-6 text-red-600"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-              >
-                <circle cx="12" cy="12" r="9" />
-                <path d="M12 8v4" />
-                <path d="M12 16h.01" />
-              </svg>
+      <div className="min-h-[calc(100vh-72px)] bg-[#080b12] p-4 text-white sm:p-6 lg:p-8">
+        <div className="mx-auto flex min-h-[70vh] max-w-3xl items-center justify-center">
+
+          <div className="w-full rounded-3xl border border-rose-500/20 bg-[#0d111a] p-8 text-center shadow-2xl shadow-black/20">
+
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-500/10">
+              <AlertCircle className="h-8 w-8 text-rose-400" />
             </div>
 
-            <h2 className="text-lg font-semibold text-red-800">
+            <h2 className="mt-5 text-xl font-bold">
               Unable to load problems
             </h2>
 
-            <p className="mt-1 text-sm text-red-600">
+            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-400">
               {error}
             </p>
 
             <button
               onClick={fetchProblems}
-              className="mt-4 rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700"
+              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-slate-200"
             >
+              <RefreshCw className="h-4 w-4" />
               Try Again
             </button>
+
           </div>
         </div>
       </div>
@@ -161,439 +229,582 @@ const AdminProblems = () => {
   }
 
   return (
-    <div className="min-h-[calc(100vh-80px)] bg-slate-50 p-4 sm:p-6 lg:p-8">
-      <div className="mx-auto max-w-7xl">
+    <div className="min-h-[calc(100vh-72px)] bg-[#080b12] text-white">
 
-        {/* Header */}
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/20">
-                <svg
-                  className="h-6 w-6 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M8 6h13" />
-                  <path d="M8 12h13" />
-                  <path d="M8 18h13" />
-                  <path d="M3 6h.01" />
-                  <path d="M3 12h.01" />
-                  <path d="M3 18h.01" />
-                </svg>
+      {/* Background glow */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -left-40 top-20 h-96 w-96 rounded-full bg-blue-600/5 blur-3xl" />
+        <div className="absolute -right-40 top-80 h-96 w-96 rounded-full bg-violet-600/5 blur-3xl" />
+      </div>
+
+      <main className="relative mx-auto max-w-[1500px] p-4 sm:p-6 lg:p-8">
+
+        {/* ================= HEADER ================= */}
+
+        <section className="mb-8">
+
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+
+            <div>
+
+              <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
+                Admin Control Center
+                <ChevronRight className="h-3.5 w-3.5 text-slate-600" />
+                Problems
               </div>
 
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                  Manage Problems
-                </h1>
+              <div className="flex items-start gap-4">
 
-                <p className="mt-1 text-sm text-slate-500">
-                  Create, edit and manage coding problems.
-                </p>
+                <div className="hidden h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-blue-500/20 bg-blue-500/10 sm:flex">
+                  <Code2 className="h-7 w-7 text-blue-400" />
+                </div>
+
+                <div>
+                  <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
+                    Manage Problems
+                  </h1>
+
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base">
+                    Create, organize and maintain coding challenges
+                    available across CodeArena.
+                  </p>
+                </div>
+
               </div>
             </div>
-          </div>
 
-          <Link
-            to="/admin/problems/create"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 active:scale-[0.98]"
-          >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
+            <Link
+              to="/admin/problems/create"
+              className="group inline-flex items-center justify-center gap-2 rounded-xl bg-blue-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition hover:bg-blue-400 hover:shadow-blue-500/30 active:scale-[0.98]"
             >
-              <path d="M12 5v14" />
-              <path d="M5 12h14" />
-            </svg>
+              <CirclePlus className="h-5 w-5" />
+              Create Problem
+              <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+            </Link>
 
-            Create Problem
-          </Link>
-        </div>
+          </div>
 
-        {/* Stats */}
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        </section>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between">
+        {/* ================= STATS ================= */}
+
+        <section className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+
+          {/* Total */}
+
+          <div className="group rounded-2xl border border-slate-800 bg-[#0d111a] p-5 transition hover:border-slate-700 hover:bg-[#10151f]">
+
+            <div className="flex items-start justify-between">
+
               <div>
-                <p className="text-sm font-medium text-slate-500">
-                  Total Problems
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Total
                 </p>
 
-                <p className="mt-2 text-3xl font-bold text-slate-900">
-                  {problems.length}
+                <p className="mt-3 text-3xl font-black tracking-tight">
+                  {totalProblems}
+                </p>
+
+                <p className="mt-1 text-xs text-slate-500">
+                  Coding problems
                 </p>
               </div>
 
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50">
-                <svg
-                  className="h-5 w-5 text-blue-600"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  viewBox="0 0 24 24"
-                >
-                  <rect x="4" y="4" width="16" height="16" rx="2" />
-                  <path d="M8 9h8" />
-                  <path d="M8 13h6" />
-                  <path d="M8 17h4" />
-                </svg>
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10">
+                <FileCode2 className="h-5 w-5 text-blue-400" />
               </div>
+
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between">
+          {/* Easy */}
+
+          <div className="group rounded-2xl border border-slate-800 bg-[#0d111a] p-5 transition hover:border-emerald-500/20 hover:bg-[#10151f]">
+
+            <div className="flex items-start justify-between">
+
               <div>
-                <p className="text-sm font-medium text-slate-500">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
                   Easy
                 </p>
 
-                <p className="mt-2 text-3xl font-bold text-emerald-600">
-                  {
-                    problems.filter(
-                      (problem) => problem.difficulty === "Easy"
-                    ).length
-                  }
+                <p className="mt-3 text-3xl font-black tracking-tight text-emerald-400">
+                  {easyProblems}
+                </p>
+
+                <p className="mt-1 text-xs text-slate-500">
+                  Beginner friendly
                 </p>
               </div>
 
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50">
-                <span className="text-lg font-bold text-emerald-600">
-                  E
-                </span>
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10">
+                <CheckCircle2 className="h-5 w-5 text-emerald-400" />
               </div>
+
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between">
+          {/* Medium */}
+
+          <div className="group rounded-2xl border border-slate-800 bg-[#0d111a] p-5 transition hover:border-amber-500/20 hover:bg-[#10151f]">
+
+            <div className="flex items-start justify-between">
+
               <div>
-                <p className="text-sm font-medium text-slate-500">
-                  Medium / Hard
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Medium
                 </p>
 
-                <p className="mt-2 text-3xl font-bold text-amber-600">
-                  {
-                    problems.filter(
-                      (problem) =>
-                        problem.difficulty === "Medium" ||
-                        problem.difficulty === "Hard"
-                    ).length
-                  }
+                <p className="mt-3 text-3xl font-black tracking-tight text-amber-400">
+                  {mediumProblems}
+                </p>
+
+                <p className="mt-1 text-xs text-slate-500">
+                  Intermediate
                 </p>
               </div>
 
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50">
-                <span className="text-lg font-bold text-amber-600">
-                  M
-                </span>
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10">
+                <Zap className="h-5 w-5 text-amber-400" />
               </div>
+
             </div>
           </div>
-        </div>
 
-        {/* Search + Filter */}
-        <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex flex-col gap-3 md:flex-row">
+          {/* Hard */}
+
+          <div className="group rounded-2xl border border-slate-800 bg-[#0d111a] p-5 transition hover:border-rose-500/20 hover:bg-[#10151f]">
+
+            <div className="flex items-start justify-between">
+
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Hard
+                </p>
+
+                <p className="mt-3 text-3xl font-black tracking-tight text-rose-400">
+                  {hardProblems}
+                </p>
+
+                <p className="mt-1 text-xs text-slate-500">
+                  Advanced
+                </p>
+              </div>
+
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-500/10">
+                <AlertCircle className="h-5 w-5 text-rose-400" />
+              </div>
+
+            </div>
+          </div>
+
+        </section>
+
+        {/* ================= FILTER BAR ================= */}
+
+        <section className="mb-6 rounded-2xl border border-slate-800 bg-[#0d111a] p-4 shadow-xl shadow-black/10">
+
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
             {/* Search */}
-            <div className="relative flex-1">
-              <svg
-                className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                viewBox="0 0 24 24"
-              >
-                <circle cx="11" cy="11" r="7" />
-                <path d="M20 20l-4-4" />
-              </svg>
+
+            <div className="relative w-full lg:max-w-xl">
+
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
 
               <input
                 type="text"
+                placeholder="Search by problem title or topic..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by problem title or topic..."
-                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                className="h-12 w-full rounded-xl border border-slate-800 bg-[#080b12] pl-11 pr-11 text-sm font-medium text-white outline-none transition placeholder:text-slate-600 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/5"
               />
+
+              {search && (
+                <button
+                  onClick={() => setSearch("")}
+                  className="absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-800 hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+
             </div>
 
-            {/* Difficulty */}
-            <select
-              value={difficulty}
-              onChange={(e) => setDifficulty(e.target.value)}
-              className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 md:w-44"
-            >
-              <option value="All">All Difficulties</option>
-              <option value="Easy">Easy</option>
-              <option value="Medium">Medium</option>
-              <option value="Hard">Hard</option>
-            </select>
+            {/* Filters */}
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+                <Filter className="h-4 w-4" />
+                Difficulty
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+
+                {["All", "Easy", "Medium", "Hard"].map((level) => {
+                  const active = difficulty === level;
+
+                  return (
+                    <button
+                      key={level}
+                      onClick={() => setDifficulty(level)}
+                      className={`rounded-xl border px-4 py-2.5 text-xs font-bold transition ${
+                        active
+                          ? "border-blue-500/30 bg-blue-500/10 text-blue-400"
+                          : "border-slate-800 bg-[#080b12] text-slate-500 hover:border-slate-700 hover:text-slate-300"
+                      }`}
+                    >
+                      {level}
+                    </button>
+                  );
+                })}
+
+              </div>
+
+            </div>
+
           </div>
 
-          <div className="mt-3 text-sm text-slate-500">
-            Showing{" "}
-            <span className="font-semibold text-slate-700">
-              {filteredProblems.length}
-            </span>{" "}
-            of{" "}
-            <span className="font-semibold text-slate-700">
-              {problems.length}
-            </span>{" "}
-            problems
-          </div>
-        </div>
+          {/* Filter info */}
 
-        {/* Empty State */}
-        {filteredProblems.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white px-6 py-16 text-center shadow-sm">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
-              <svg
-                className="h-8 w-8 text-slate-400"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                viewBox="0 0 24 24"
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-800 pt-4">
+
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <ListFilter className="h-4 w-4" />
+
+              Showing
+              <span className="font-bold text-slate-300">
+                {filteredProblems.length}
+              </span>
+              of
+              <span className="font-bold text-slate-300">
+                {totalProblems}
+              </span>
+              problems
+            </div>
+
+            {(search || difficulty !== "All") && (
+              <button
+                onClick={clearFilters}
+                className="text-xs font-bold text-blue-400 transition hover:text-blue-300"
               >
-                <circle cx="11" cy="11" r="7" />
-                <path d="M20 20l-4-4" />
-              </svg>
+                Clear filters
+              </button>
+            )}
+
+          </div>
+
+        </section>
+
+        {/* ================= EMPTY STATE ================= */}
+
+        {filteredProblems.length === 0 ? (
+          <section className="rounded-2xl border border-dashed border-slate-800 bg-[#0d111a] px-6 py-20 text-center">
+
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-800/60">
+              <Search className="h-7 w-7 text-slate-500" />
             </div>
 
-            <h3 className="mt-5 text-lg font-semibold text-slate-900">
+            <h2 className="mt-5 text-lg font-bold text-slate-200">
               No problems found
-            </h3>
+            </h2>
 
-            <p className="mt-2 text-sm text-slate-500">
-              Try changing your search or difficulty filter.
+            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+              No problems match your current search or difficulty
+              filter.
             </p>
 
             {(search || difficulty !== "All") && (
               <button
-                onClick={() => {
-                  setSearch("");
-                  setDifficulty("All");
-                }}
-                className="mt-5 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                onClick={clearFilters}
+                className="mt-5 rounded-xl border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm font-bold text-slate-300 transition hover:border-slate-700 hover:text-white"
               >
                 Clear Filters
               </button>
             )}
-          </div>
+
+          </section>
         ) : (
           <>
-            {/* Desktop Table */}
-            <div className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm md:block">
+
+            {/* ================= DESKTOP TABLE ================= */}
+
+            <section className="hidden overflow-hidden rounded-2xl border border-slate-800 bg-[#0d111a] shadow-2xl shadow-black/10 md:block">
+
+              {/* Table header */}
+
+              <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
+
+                <div>
+                  <h2 className="text-sm font-bold text-slate-200">
+                    Problem Library
+                  </h2>
+
+                  <p className="mt-1 text-xs text-slate-500">
+                    Manage all coding challenges
+                  </p>
+                </div>
+
+                <div className="rounded-lg border border-slate-800 bg-[#080b12] px-3 py-1.5 text-xs font-bold text-slate-400">
+                  {filteredProblems.length} results
+                </div>
+
+              </div>
+
               <div className="overflow-x-auto">
+
                 <table className="w-full">
+
                   <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50">
-                      <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    <tr className="border-b border-slate-800 bg-[#0a0e16]">
+
+                      <th className="px-6 py-4 text-left text-[11px] font-bold uppercase tracking-[0.12em] text-slate-600">
                         Problem
                       </th>
 
-                      <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      <th className="px-6 py-4 text-left text-[11px] font-bold uppercase tracking-[0.12em] text-slate-600">
                         Difficulty
                       </th>
 
-                      <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      <th className="px-6 py-4 text-left text-[11px] font-bold uppercase tracking-[0.12em] text-slate-600">
                         Topics
                       </th>
 
-                      <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      <th className="px-6 py-4 text-right text-[11px] font-bold uppercase tracking-[0.12em] text-slate-600">
                         Actions
                       </th>
+
                     </tr>
                   </thead>
 
-                  <tbody className="divide-y divide-slate-100">
-                    {filteredProblems.map((problem) => (
-                      <tr
-                        key={problem._id}
-                        className="transition hover:bg-slate-50/80"
-                      >
-                        <td className="px-6 py-5">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-sm font-bold text-blue-600">
-                              #
+                  <tbody className="divide-y divide-slate-800/70">
+
+                    {filteredProblems.map((problem) => {
+                      const config = getDifficultyConfig(
+                        problem.difficulty
+                      );
+
+                      return (
+                        <tr
+                          key={problem._id}
+                          className="group transition hover:bg-white/[0.015]"
+                        >
+
+                          {/* Problem */}
+
+                          <td className="px-6 py-5">
+
+                            <div className="flex items-center gap-4">
+
+                              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-800 bg-[#080b12] text-xs font-black text-slate-500 transition group-hover:border-blue-500/20 group-hover:text-blue-400">
+                                <FileCode2 className="h-5 w-5" />
+                              </div>
+
+                              <div className="min-w-0">
+
+                                <p className="truncate text-sm font-bold text-slate-200 transition group-hover:text-white">
+                                  {problem.title}
+                                </p>
+
+                                <p className="mt-1 font-mono text-[10px] text-slate-600">
+                                  #{problem._id.slice(-8)}
+                                </p>
+
+                              </div>
+
                             </div>
 
-                            <div>
-                              <p className="font-semibold text-slate-900">
-                                {problem.title}
-                              </p>
+                          </td>
 
-                              <p className="mt-0.5 text-xs text-slate-400">
-                                ID: {problem._id.slice(-8)}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
+                          {/* Difficulty */}
 
-                        <td className="px-6 py-5">
-                          <span
-                            className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${getDifficultyStyle(
-                              problem.difficulty
-                            )}`}
-                          >
-                            {problem.difficulty}
-                          </span>
-                        </td>
+                          <td className="px-6 py-5">
 
-                        <td className="px-6 py-5">
-                          <div className="flex max-w-sm flex-wrap gap-2">
-                            {problem.topics?.length ? (
-                              problem.topics.map((topic, index) => (
-                                <span
-                                  key={`${topic}-${index}`}
-                                  className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600"
-                                >
-                                  {topic}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="text-sm text-slate-400">
-                                No topics
-                              </span>
-                            )}
-                          </div>
-                        </td>
-
-                        <td className="px-6 py-5">
-                          <div className="flex justify-end gap-2">
-                            <Link
-                              to={`/admin/problems/${problem._id}/edit`}
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+                            <span
+                              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold ${config.bg} ${config.border} ${config.text}`}
                             >
-                              <svg
-                                className="h-4 w-4"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="1.8"
-                                viewBox="0 0 24 24"
-                              >
-                                <path d="M12 20h9" />
-                                <path d="M16.5 3.5a2.1 2.1 0 013 3L8 18l-4 1 1-4z" />
-                              </svg>
-                              Edit
-                            </Link>
+                              <span
+                                className={`h-1.5 w-1.5 rounded-full ${config.dot}`}
+                              />
+                              {problem.difficulty}
+                            </span>
 
-                            <button
-                              onClick={() =>
-                                handleDelete(
-                                  problem._id,
-                                  problem.title
+                          </td>
+
+                          {/* Topics */}
+
+                          <td className="px-6 py-5">
+
+                            <div className="flex max-w-lg flex-wrap gap-1.5">
+
+                              {problem.topics?.length ? (
+                                problem.topics.map(
+                                  (topic, index) => (
+                                    <span
+                                      key={`${topic}-${index}`}
+                                      className="rounded-lg border border-slate-800 bg-[#080b12] px-2.5 py-1 text-[11px] font-semibold text-slate-500 transition group-hover:text-slate-400"
+                                    >
+                                      {topic}
+                                    </span>
+                                  )
                                 )
-                              }
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
-                            >
-                              <svg
-                                className="h-4 w-4"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="1.8"
-                                viewBox="0 0 24 24"
+                              ) : (
+                                <span className="text-xs text-slate-600">
+                                  No topics
+                                </span>
+                              )}
+
+                            </div>
+
+                          </td>
+
+                          {/* Actions */}
+
+                          <td className="px-6 py-5">
+
+                            <div className="flex justify-end gap-2">
+
+                              <Link
+                                to={`/admin/problems/${problem._id}/edit`}
+                                className="inline-flex items-center gap-2 rounded-xl border border-slate-800 bg-[#080b12] px-3.5 py-2.5 text-xs font-bold text-slate-400 transition hover:border-blue-500/30 hover:bg-blue-500/10 hover:text-blue-400"
                               >
-                                <path d="M4 7h16" />
-                                <path d="M10 11v6" />
-                                <path d="M14 11v6" />
-                                <path d="M6 7l1 14h10l1-14" />
-                                <path d="M9 7V4h6v3" />
-                              </svg>
-                              Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                                <Pencil className="h-3.5 w-3.5" />
+                                Edit
+                              </Link>
+
+                              <button
+                                onClick={() =>
+                                  handleDelete(
+                                    problem._id,
+                                    problem.title
+                                  )
+                                }
+                                className="inline-flex items-center gap-2 rounded-xl border border-slate-800 bg-[#080b12] px-3.5 py-2.5 text-xs font-bold text-slate-500 transition hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-400"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                                Delete
+                              </button>
+
+                            </div>
+
+                          </td>
+
+                        </tr>
+                      );
+                    })}
+
                   </tbody>
+
                 </table>
+
               </div>
-            </div>
 
-            {/* Mobile Cards */}
-            <div className="space-y-4 md:hidden">
-              {filteredProblems.map((problem) => (
-                <div
-                  key={problem._id}
-                  className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 font-bold text-blue-600">
-                        #
+            </section>
+
+            {/* ================= MOBILE CARDS ================= */}
+
+            <section className="space-y-3 md:hidden">
+
+              {filteredProblems.map((problem) => {
+                const config = getDifficultyConfig(
+                  problem.difficulty
+                );
+
+                return (
+                  <article
+                    key={problem._id}
+                    className="rounded-2xl border border-slate-800 bg-[#0d111a] p-4 shadow-xl shadow-black/10"
+                  >
+
+                    <div className="flex items-start justify-between gap-3">
+
+                      <div className="flex min-w-0 items-start gap-3">
+
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-800 bg-[#080b12]">
+                          <FileCode2 className="h-4 w-4 text-blue-400" />
+                        </div>
+
+                        <div className="min-w-0">
+
+                          <h3 className="truncate text-sm font-bold text-slate-200">
+                            {problem.title}
+                          </h3>
+
+                          <p className="mt-1 font-mono text-[10px] text-slate-600">
+                            #{problem._id.slice(-8)}
+                          </p>
+
+                        </div>
+
                       </div>
 
-                      <div>
-                        <h3 className="font-semibold text-slate-900">
-                          {problem.title}
-                        </h3>
+                      <span
+                        className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold ${config.bg} ${config.border} ${config.text}`}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${config.dot}`}
+                        />
+                        {problem.difficulty}
+                      </span>
 
-                        <p className="mt-1 text-xs text-slate-400">
-                          ID: {problem._id.slice(-8)}
-                        </p>
-                      </div>
                     </div>
 
-                    <span
-                      className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${getDifficultyStyle(
-                        problem.difficulty
-                      )}`}
-                    >
-                      {problem.difficulty}
-                    </span>
-                  </div>
+                    <div className="mt-4 flex flex-wrap gap-1.5">
 
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {problem.topics?.length ? (
-                      problem.topics.map((topic, index) => (
-                        <span
-                          key={`${topic}-${index}`}
-                          className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600"
-                        >
-                          {topic}
+                      {problem.topics?.length ? (
+                        problem.topics.map((topic, index) => (
+                          <span
+                            key={`${topic}-${index}`}
+                            className="rounded-lg border border-slate-800 bg-[#080b12] px-2.5 py-1 text-[10px] font-semibold text-slate-500"
+                          >
+                            {topic}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-slate-600">
+                          No topics
                         </span>
-                      ))
-                    ) : (
-                      <span className="text-sm text-slate-400">
-                        No topics
-                      </span>
-                    )}
-                  </div>
+                      )}
 
-                  <div className="mt-5 flex gap-2 border-t border-slate-100 pt-4">
-                    <Link
-                      to={`/admin/problems/${problem._id}/edit`}
-                      className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-blue-50 hover:text-blue-600"
-                    >
-                      ✏️ Edit
-                    </Link>
+                    </div>
 
-                    <button
-                      onClick={() =>
-                        handleDelete(
-                          problem._id,
-                          problem.title
-                        )
-                      }
-                      className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-red-200 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50"
-                    >
-                      🗑 Delete
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                    <div className="mt-4 grid grid-cols-2 gap-2 border-t border-slate-800 pt-4">
+
+                      <Link
+                        to={`/admin/problems/${problem._id}/edit`}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-800 bg-[#080b12] py-2.5 text-xs font-bold text-slate-400 transition hover:border-blue-500/30 hover:bg-blue-500/10 hover:text-blue-400"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        Edit
+                      </Link>
+
+                      <button
+                        onClick={() =>
+                          handleDelete(
+                            problem._id,
+                            problem.title
+                          )
+                        }
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-800 bg-[#080b12] py-2.5 text-xs font-bold text-slate-500 transition hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-400"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Delete
+                      </button>
+
+                    </div>
+
+                  </article>
+                );
+              })}
+
+            </section>
+
           </>
         )}
-      </div>
+
+      </main>
     </div>
   );
 };

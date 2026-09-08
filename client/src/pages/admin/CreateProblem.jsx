@@ -1,5 +1,23 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  AlertCircle,
+  ArrowLeft,
+  Check,
+  ChevronRight,
+  CirclePlus,
+  Code2,
+  EyeOff,
+  FileCode2,
+  Layers3,
+  Minus,
+  Plus,
+  Save,
+  Sparkles,
+  Trash2,
+  X,
+  Zap,
+} from "lucide-react";
 import api from "../../services/api";
 
 const CreateProblem = () => {
@@ -68,7 +86,6 @@ const CreateProblem = () => {
 
   const removeExample = (index) => {
     if (examples.length === 1) {
-      alert("At least one example is required");
       return;
     }
 
@@ -103,7 +120,6 @@ const CreateProblem = () => {
 
   const removeTestCase = (index) => {
     if (testCases.length === 1) {
-      alert("At least one test case is required");
       return;
     }
 
@@ -131,6 +147,18 @@ const CreateProblem = () => {
           testCase.input.trim() &&
           testCase.expectedOutput.trim()
       );
+
+      if (!formData.title.trim()) {
+        setError("Problem title is required.");
+        setLoading(false);
+        return;
+      }
+
+      if (!formData.description.trim()) {
+        setError("Problem description is required.");
+        setLoading(false);
+        return;
+      }
 
       if (validExamples.length === 0) {
         setError("Please add at least one example.");
@@ -185,56 +213,141 @@ const CreateProblem = () => {
     }
   };
 
+  const difficultyConfig = {
+    Easy: {
+      text: "text-emerald-400",
+      bg: "bg-emerald-500/10",
+      border: "border-emerald-500/20",
+      dot: "bg-emerald-400",
+    },
+    Medium: {
+      text: "text-amber-400",
+      bg: "bg-amber-500/10",
+      border: "border-amber-500/20",
+      dot: "bg-amber-400",
+    },
+    Hard: {
+      text: "text-rose-400",
+      bg: "bg-rose-500/10",
+      border: "border-rose-500/20",
+      dot: "bg-rose-400",
+    },
+  };
+
   const inputClass =
-    "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10";
+    "w-full rounded-xl border border-slate-800 bg-[#080b12] px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/5";
 
   const textareaClass =
-    "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 resize-y";
+    "w-full resize-y rounded-xl border border-slate-800 bg-[#080b12] px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-slate-600 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/5";
 
-  return (
-    <div className="min-h-screen bg-[#f6f8fc]">
-      <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-
-        {/* Header */}
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-              <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
-              Problem Management
-            </div>
-
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-              Create New Problem
-            </h1>
-
-            <p className="mt-1 text-sm text-slate-500 sm:text-base">
-              Add a new coding challenge to CodeArena.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => navigate("/admin/problems")}
-            className="w-fit rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
-          >
-            ← Back to Problems
-          </button>
+  const SectionHeader = ({
+    number,
+    icon: Icon,
+    title,
+    description,
+    action,
+  }) => (
+    <div className="flex flex-col gap-4 border-b border-slate-800 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10">
+          <Icon className="h-5 w-5 text-blue-400" />
         </div>
 
-        {/* Error */}
-        {error && (
-          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4">
-            <div className="flex items-start gap-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-600">
-                !
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[10px] font-bold text-blue-400">
+              {number}
+            </span>
+
+            <h2 className="text-sm font-bold text-slate-100 sm:text-base">
+              {title}
+            </h2>
+          </div>
+
+          <p className="mt-1 text-xs text-slate-500">
+            {description}
+          </p>
+        </div>
+      </div>
+
+      {action}
+    </div>
+  );
+
+  return (
+    <div className="min-h-[calc(100vh-72px)] bg-[#080b12] text-white">
+      {/* Background */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -left-40 top-20 h-96 w-96 rounded-full bg-blue-600/5 blur-3xl" />
+        <div className="absolute -right-40 top-80 h-96 w-96 rounded-full bg-violet-600/5 blur-3xl" />
+      </div>
+
+      <main className="relative mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+
+        {/* Header */}
+        <section className="mb-8">
+          <div className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
+            Admin Control Center
+            <ChevronRight className="h-3.5 w-3.5 text-slate-600" />
+            Problems
+            <ChevronRight className="h-3.5 w-3.5 text-slate-600" />
+            Create
+          </div>
+
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div className="flex items-start gap-4">
+              <div className="hidden h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-blue-500/20 bg-blue-500/10 sm:flex">
+                <CirclePlus className="h-7 w-7 text-blue-400" />
               </div>
 
               <div>
-                <p className="font-semibold text-red-800">
-                  Unable to create problem
-                </p>
+                <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
+                  Create New Problem
+                </h1>
 
-                <p className="mt-1 text-sm text-red-600">
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base">
+                  Build a complete coding challenge with examples,
+                  constraints, starter code and evaluation test cases.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => navigate("/admin/problems")}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-800 bg-[#0d111a] px-4 py-3 text-sm font-bold text-slate-400 transition hover:border-slate-700 hover:bg-[#10151f] hover:text-white"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Problems
+            </button>
+          </div>
+        </section>
+
+        {/* Error */}
+        {error && (
+          <div className="mb-6 rounded-2xl border border-rose-500/20 bg-rose-500/5 p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-500/10">
+                <AlertCircle className="h-5 w-5 text-rose-400" />
+              </div>
+
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-bold text-rose-300">
+                    Unable to create problem
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() => setError("")}
+                    className="rounded-md p-1 text-rose-500 transition hover:bg-rose-500/10 hover:text-rose-300"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+
+                <p className="mt-1 text-xs leading-5 text-rose-400/80">
                   {error}
                 </p>
               </div>
@@ -245,32 +358,21 @@ const CreateProblem = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
 
           {/* Basic Information */}
-          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                  01
-                </div>
+          <section className="overflow-hidden rounded-2xl border border-slate-800 bg-[#0d111a] shadow-2xl shadow-black/10">
+            <SectionHeader
+              number="01"
+              icon={Layers3}
+              title="Basic Information"
+              description="Define the core details of the coding challenge."
+            />
 
-                <div>
-                  <h2 className="font-bold text-slate-900">
-                    Basic Information
-                  </h2>
-
-                  <p className="text-xs text-slate-500">
-                    Define the core details of the problem.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-5 p-5 sm:p-6">
+            <div className="space-y-6 p-5 sm:p-6">
 
               {/* Title */}
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
                   Problem Title
-                  <span className="ml-1 text-red-500">*</span>
+                  <span className="text-rose-400">*</span>
                 </label>
 
                 <input
@@ -282,13 +384,17 @@ const CreateProblem = () => {
                   required
                   className={inputClass}
                 />
+
+                <p className="mt-2 text-[11px] text-slate-600">
+                  Use a clear and concise title that describes the challenge.
+                </p>
               </div>
 
               {/* Description */}
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
                   Description
-                  <span className="ml-1 text-red-500">*</span>
+                  <span className="text-rose-400">*</span>
                 </label>
 
                 <textarea
@@ -296,21 +402,25 @@ const CreateProblem = () => {
                   value={formData.description}
                   onChange={handleChange}
                   placeholder="Write the complete problem description..."
-                  rows={7}
+                  rows={8}
                   required
                   className={textareaClass}
                 />
 
-                <p className="mt-2 text-xs text-slate-400">
-                  Clearly explain the problem and what the user needs to solve.
-                </p>
+                <div className="mt-2 flex items-center justify-between text-[11px] text-slate-600">
+                  <span>
+                    Clearly explain what the user needs to solve.
+                  </span>
+
+                  <span>{formData.description.length} characters</span>
+                </div>
               </div>
 
               {/* Difficulty + Topics */}
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
 
                 <div>
-                  <label className="mb-2 block text-sm font-semibold text-slate-700">
+                  <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-400">
                     Difficulty
                   </label>
 
@@ -324,10 +434,28 @@ const CreateProblem = () => {
                     <option value="Medium">Medium</option>
                     <option value="Hard">Hard</option>
                   </select>
+
+                  <div className="mt-3">
+                    {(() => {
+                      const config =
+                        difficultyConfig[formData.difficulty];
+
+                      return (
+                        <span
+                          className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold ${config.bg} ${config.border} ${config.text}`}
+                        >
+                          <span
+                            className={`h-1.5 w-1.5 rounded-full ${config.dot}`}
+                          />
+                          {formData.difficulty} Difficulty
+                        </span>
+                      );
+                    })()}
+                  </div>
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-semibold text-slate-700">
+                  <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-400">
                     Topics
                   </label>
 
@@ -340,15 +468,15 @@ const CreateProblem = () => {
                     className={inputClass}
                   />
 
-                  <p className="mt-2 text-xs text-slate-400">
-                    Separate topics using commas.
+                  <p className="mt-2 text-[11px] text-slate-600">
+                    Separate multiple topics using commas.
                   </p>
                 </div>
               </div>
 
               {/* Constraints */}
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-400">
                   Constraints
                 </label>
 
@@ -359,152 +487,165 @@ const CreateProblem = () => {
                   placeholder={`2 <= nums.length <= 10000
 -10^9 <= nums[i] <= 10^9`}
                   rows={6}
-                  className={textareaClass}
+                  className={`${textareaClass} font-mono text-[13px]`}
                 />
 
-                <p className="mt-2 text-xs text-slate-400">
-                  Write each constraint on a new line.
+                <p className="mt-2 text-[11px] text-slate-600">
+                  Write each constraint on a separate line.
                 </p>
               </div>
             </div>
           </section>
 
           {/* Starter Code */}
-          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-xs font-bold text-white">
-                  02
-                </div>
-
-                <div>
-                  <h2 className="font-bold text-slate-900">
-                    Starter Code
-                  </h2>
-
-                  <p className="text-xs text-slate-500">
-                    Provide the initial code shown to users.
-                  </p>
-                </div>
-              </div>
-            </div>
+          <section className="overflow-hidden rounded-2xl border border-slate-800 bg-[#0d111a] shadow-2xl shadow-black/10">
+            <SectionHeader
+              number="02"
+              icon={Code2}
+              title="Starter Code"
+              description="Provide the initial code shown to users."
+            />
 
             <div className="p-5 sm:p-6">
-              <textarea
-                name="starterCode"
-                value={formData.starterCode}
-                onChange={handleChange}
-                placeholder="// Write starter code here..."
-                rows={14}
-                className={`${textareaClass} font-mono text-[13px] leading-6`}
-              />
+              <div className="overflow-hidden rounded-2xl border border-slate-800 bg-[#080b12]">
+
+                <div className="flex items-center justify-between border-b border-slate-800 bg-[#0a0e16] px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <FileCode2 className="h-4 w-4 text-blue-400" />
+
+                    <span className="font-mono text-xs font-bold text-slate-400">
+                      starter.cpp
+                    </span>
+                  </div>
+
+                  <span className="rounded-lg border border-slate-800 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                    C++
+                  </span>
+                </div>
+
+                <textarea
+                  name="starterCode"
+                  value={formData.starterCode}
+                  onChange={handleChange}
+                  placeholder={`#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    // Write your code here
+    return 0;
+}`}
+                  rows={16}
+                  className="w-full resize-y bg-transparent px-5 py-4 font-mono text-[13px] leading-6 text-slate-300 outline-none placeholder:text-slate-700"
+                />
+              </div>
             </div>
           </section>
 
           {/* Examples */}
-          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-xs font-bold text-violet-600">
-                    03
-                  </div>
-
-                  <div>
-                    <h2 className="font-bold text-slate-900">
-                      Examples
-                    </h2>
-
-                    <p className="text-xs text-slate-500">
-                      Examples visible on the problem page.
-                    </p>
-                  </div>
-                </div>
-
+          <section className="overflow-hidden rounded-2xl border border-slate-800 bg-[#0d111a] shadow-2xl shadow-black/10">
+            <SectionHeader
+              number="03"
+              icon={Sparkles}
+              title="Examples"
+              description="Examples visible to users on the problem page."
+              action={
                 <button
                   type="button"
                   onClick={addExample}
-                  className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-500/20 bg-blue-500/10 px-4 py-2.5 text-xs font-bold text-blue-400 transition hover:border-blue-500/30 hover:bg-blue-500/15"
                 >
-                  + Add Example
+                  <Plus className="h-4 w-4" />
+                  Add Example
                 </button>
-              </div>
-            </div>
+              }
+            />
 
             <div className="space-y-5 p-5 sm:p-6">
               {examples.map((example, index) => (
                 <div
                   key={index}
-                  className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5"
+                  className="overflow-hidden rounded-2xl border border-slate-800 bg-[#080b12]"
                 >
-                  <div className="mb-5 flex items-center justify-between gap-3">
+                  <div className="flex items-center justify-between border-b border-slate-800 bg-[#0a0e16] px-4 py-3 sm:px-5">
                     <div className="flex items-center gap-3">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 text-sm font-bold text-violet-700">
-                        {index + 1}
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/10 font-mono text-xs font-bold text-violet-400">
+                        {String(index + 1).padStart(2, "0")}
                       </span>
 
-                      <h3 className="font-semibold text-slate-900">
-                        Example {index + 1}
-                      </h3>
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-200">
+                          Example {index + 1}
+                        </h3>
+
+                        <p className="hidden text-[10px] text-slate-600 sm:block">
+                          Visible to all users
+                        </p>
+                      </div>
                     </div>
 
                     {examples.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeExample(index)}
-                        className="rounded-lg px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-800 px-2.5 py-2 text-[11px] font-bold text-slate-500 transition hover:border-rose-500/20 hover:bg-rose-500/10 hover:text-rose-400"
                       >
-                        Remove
+                        <Trash2 className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline">
+                          Remove
+                        </span>
                       </button>
                     )}
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-5 p-4 sm:p-5">
 
-                    <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-700">
-                        Input
-                      </label>
+                    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
 
-                      <textarea
-                        value={example.input}
-                        onChange={(e) =>
-                          handleExampleChange(
-                            index,
-                            "input",
-                            e.target.value
-                          )
-                        }
-                        placeholder="Example input"
-                        rows={3}
-                        required
-                        className={`${textareaClass} font-mono text-[13px]`}
-                      />
+                      <div>
+                        <label className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                          Input
+                        </label>
+
+                        <textarea
+                          value={example.input}
+                          onChange={(e) =>
+                            handleExampleChange(
+                              index,
+                              "input",
+                              e.target.value
+                            )
+                          }
+                          placeholder="Example input"
+                          rows={5}
+                          required
+                          className={`${textareaClass} font-mono text-[13px]`}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                          Output
+                        </label>
+
+                        <textarea
+                          value={example.output}
+                          onChange={(e) =>
+                            handleExampleChange(
+                              index,
+                              "output",
+                              e.target.value
+                            )
+                          }
+                          placeholder="Expected output"
+                          rows={5}
+                          required
+                          className={`${textareaClass} font-mono text-[13px]`}
+                        />
+                      </div>
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-700">
-                        Output
-                      </label>
-
-                      <textarea
-                        value={example.output}
-                        onChange={(e) =>
-                          handleExampleChange(
-                            index,
-                            "output",
-                            e.target.value
-                          )
-                        }
-                        placeholder="Expected output"
-                        rows={3}
-                        required
-                        className={`${textareaClass} font-mono text-[13px]`}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      <label className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                         Explanation
                       </label>
 
@@ -529,108 +670,142 @@ const CreateProblem = () => {
           </section>
 
           {/* Test Cases */}
-          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-xs font-bold text-emerald-600">
-                    04
-                  </div>
-
-                  <div>
-                    <h2 className="font-bold text-slate-900">
-                      Test Cases
-                    </h2>
-
-                    <p className="text-xs text-slate-500">
-                      Test cases used to evaluate submitted code.
-                    </p>
-                  </div>
-                </div>
-
+          <section className="overflow-hidden rounded-2xl border border-slate-800 bg-[#0d111a] shadow-2xl shadow-black/10">
+            <SectionHeader
+              number="04"
+              icon={Zap}
+              title="Test Cases"
+              description="Test cases used to evaluate submitted code."
+              action={
                 <button
                   type="button"
                   onClick={addTestCase}
-                  className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 text-xs font-bold text-emerald-400 transition hover:border-emerald-500/30 hover:bg-emerald-500/15"
                 >
-                  + Add Test Case
+                  <Plus className="h-4 w-4" />
+                  Add Test Case
                 </button>
-              </div>
-            </div>
+              }
+            />
 
             <div className="space-y-5 p-5 sm:p-6">
               {testCases.map((testCase, index) => (
                 <div
                   key={index}
-                  className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5"
+                  className="overflow-hidden rounded-2xl border border-slate-800 bg-[#080b12]"
                 >
-                  <div className="mb-5 flex items-center justify-between gap-3">
+                  <div className="flex items-center justify-between border-b border-slate-800 bg-[#0a0e16] px-4 py-3 sm:px-5">
                     <div className="flex items-center gap-3">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-sm font-bold text-emerald-700">
-                        {index + 1}
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 font-mono text-xs font-bold text-emerald-400">
+                        {String(index + 1).padStart(2, "0")}
                       </span>
 
-                      <h3 className="font-semibold text-slate-900">
-                        Test Case {index + 1}
-                      </h3>
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-200">
+                          Test Case {index + 1}
+                        </h3>
+
+                        <p className="hidden text-[10px] text-slate-600 sm:block">
+                          Evaluation input
+                        </p>
+                      </div>
                     </div>
 
                     {testCases.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeTestCase(index)}
-                        className="rounded-lg px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-800 px-2.5 py-2 text-[11px] font-bold text-slate-500 transition hover:border-rose-500/20 hover:bg-rose-500/10 hover:text-rose-400"
                       >
-                        Remove
+                        <Trash2 className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline">
+                          Remove
+                        </span>
                       </button>
                     )}
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-5 p-4 sm:p-5">
 
-                    <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-700">
-                        Input
-                      </label>
+                    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
 
-                      <textarea
-                        value={testCase.input}
-                        onChange={(e) =>
-                          handleTestCaseChange(
-                            index,
-                            "input",
-                            e.target.value
-                          )
-                        }
-                        placeholder="[2,7,11,15] 9"
-                        rows={3}
-                        required
-                        className={`${textareaClass} font-mono text-[13px]`}
-                      />
+                      <div>
+                        <label className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                          Input
+                        </label>
+
+                        <textarea
+                          value={testCase.input}
+                          onChange={(e) =>
+                            handleTestCaseChange(
+                              index,
+                              "input",
+                              e.target.value
+                            )
+                          }
+                          placeholder={`5
+1 2 3 4 5`}
+                          rows={5}
+                          required
+                          className={`${textareaClass} font-mono text-[13px]`}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                          Expected Output
+                        </label>
+
+                        <textarea
+                          value={testCase.expectedOutput}
+                          onChange={(e) =>
+                            handleTestCaseChange(
+                              index,
+                              "expectedOutput",
+                              e.target.value
+                            )
+                          }
+                          placeholder="15"
+                          rows={5}
+                          required
+                          className={`${textareaClass} font-mono text-[13px]`}
+                        />
+                      </div>
                     </div>
 
-                    <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-700">
-                        Expected Output
-                      </label>
+                    <label
+                      className={`flex cursor-pointer items-center justify-between gap-4 rounded-xl border p-4 transition ${
+                        testCase.isHidden
+                          ? "border-amber-500/20 bg-amber-500/5"
+                          : "border-slate-800 bg-[#0d111a] hover:border-slate-700"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`flex h-9 w-9 items-center justify-center rounded-lg ${
+                            testCase.isHidden
+                              ? "bg-amber-500/10"
+                              : "bg-slate-800"
+                          }`}
+                        >
+                          {testCase.isHidden ? (
+                            <EyeOff className="h-4 w-4 text-amber-400" />
+                          ) : (
+                            <Check className="h-4 w-4 text-slate-500" />
+                          )}
+                        </div>
 
-                      <input
-                        type="text"
-                        value={testCase.expectedOutput}
-                        onChange={(e) =>
-                          handleTestCaseChange(
-                            index,
-                            "expectedOutput",
-                            e.target.value
-                          )
-                        }
-                        placeholder="[0,1]"
-                        required
-                        className={`${inputClass} font-mono`}
-                      />
-                    </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-300">
+                            Hidden Test Case
+                          </p>
 
-                    <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white p-4">
+                          <p className="mt-0.5 text-[11px] text-slate-600">
+                            Keep this test case hidden from users.
+                          </p>
+                        </div>
+                      </div>
+
                       <input
                         type="checkbox"
                         checked={testCase.isHidden}
@@ -641,18 +816,8 @@ const CreateProblem = () => {
                             e.target.checked
                           )
                         }
-                        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        className="h-5 w-5 rounded border-slate-700 bg-slate-900 text-blue-500 focus:ring-blue-500/20"
                       />
-
-                      <div>
-                        <p className="text-sm font-semibold text-slate-800">
-                          Hidden Test Case
-                        </p>
-
-                        <p className="text-xs text-slate-400">
-                          Keep this test case hidden from users.
-                        </p>
-                      </div>
                     </label>
                   </div>
                 </div>
@@ -660,35 +825,99 @@ const CreateProblem = () => {
             </div>
           </section>
 
-          {/* Submit */}
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h3 className="font-bold text-slate-900">
-                  Ready to publish?
-                </h3>
+          {/* Summary */}
+          <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="rounded-2xl border border-slate-800 bg-[#0d111a] p-4">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                Examples
+              </p>
 
-                <p className="mt-1 text-sm text-slate-500">
-                  Make sure the problem, examples and test cases are correct.
-                </p>
+              <p className="mt-2 text-2xl font-black text-violet-400">
+                {examples.length}
+              </p>
+
+              <p className="mt-1 text-[11px] text-slate-600">
+                Visible examples
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-800 bg-[#0d111a] p-4">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                Test Cases
+              </p>
+
+              <p className="mt-2 text-2xl font-black text-emerald-400">
+                {testCases.length}
+              </p>
+
+              <p className="mt-1 text-[11px] text-slate-600">
+                Evaluation cases
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-800 bg-[#0d111a] p-4">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                Hidden
+              </p>
+
+              <p className="mt-2 text-2xl font-black text-amber-400">
+                {testCases.filter((testCase) => testCase.isHidden).length}
+              </p>
+
+              <p className="mt-1 text-[11px] text-slate-600">
+                Private evaluation cases
+              </p>
+            </div>
+          </section>
+
+          {/* Submit */}
+          <section className="sticky bottom-4 z-20 overflow-hidden rounded-2xl border border-slate-800 bg-[#0d111a]/95 p-4 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
+              <div className="flex items-start gap-3">
+                <div className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 sm:flex">
+                  <Save className="h-5 w-5 text-blue-400" />
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-bold text-slate-200">
+                    Ready to publish?
+                  </h3>
+
+                  <p className="mt-1 text-[11px] leading-5 text-slate-600">
+                    Verify the problem statement, examples and test cases
+                    before creating it.
+                  </p>
+                </div>
               </div>
 
-              <div className="flex flex-col-reverse gap-3 sm:flex-row">
+              <div className="flex flex-col-reverse gap-2 sm:flex-row">
                 <button
                   type="button"
                   onClick={() => navigate("/admin/problems")}
                   disabled={loading}
-                  className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-800 bg-[#080b12] px-5 py-3 text-sm font-bold text-slate-400 transition hover:border-slate-700 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
+                  <ArrowLeft className="h-4 w-4" />
                   Cancel
                 </button>
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-500 px-6 py-3 text-sm font-black text-white shadow-lg shadow-blue-500/20 transition hover:bg-blue-400 hover:shadow-blue-500/30 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {loading ? "Creating Problem..." : "Create Problem"}
+                  {loading ? (
+                    <>
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" />
+                      Create Problem
+                    </>
+                  )}
                 </button>
               </div>
             </div>
