@@ -1,4 +1,6 @@
 import Problem from "../models/Problem.js";
+import Submission from "../models/Submission.js";
+import User from "../models/User.js";
 
 export const createProblem = async (req, res) => {
   try {
@@ -60,8 +62,7 @@ export const getProblems = async (req, res) => {
 
 export const getProblemById = async (req, res) => {
   try {
-    const problem = await Problem.findById(req.params.id)
-      .select("-testCases");
+    const problem = await Problem.findById(req.params.id).select("-testCases");
 
     if (!problem) {
       return res.status(404).json({
@@ -83,22 +84,30 @@ export const getProblemById = async (req, res) => {
 
 export const updateProblem = async (req, res) => {
   try {
-    const problem = await Problem.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    const problem = await Problem.findById(req.params.id);
+
     if (!problem) {
       return res.status(404).json({
         message: "Problem not found",
       });
     }
-    res.status(200).json({
-      message: "Problem update successfully",
+
+    // Update problem fields
+    Object.assign(problem, req.body);
+
+    // Increase version whenever problem is edited
+    problem.version = (problem.version || 1) + 1;
+
+    await problem.save();
+
+    return res.status(200).json({
+      message: "Problem updated successfully",
       problem,
     });
   } catch (error) {
     console.error("Update Problem Error:", error.message);
-    res.status(500).json({
+
+    return res.status(500).json({
       message: "Server error",
     });
   }
@@ -106,25 +115,42 @@ export const updateProblem = async (req, res) => {
 
 export const deleteProblem = async (req, res) => {
   try {
-    const problem = await Problem.findByIdAndDelete(req.params.id);
+    const problem = await Problem.findById(req.params.id);
+
     if (!problem) {
       return res.status(404).json({
         message: "Problem not found",
       });
     }
-    res.status(200).json({
+
+    // Remove this problem from every user's solvedProblems
+    await User.updateMany(
+      { solvedProblems: problem._id },
+      {
+        $pull: {
+          solvedProblems: problem._id,
+        },
+      },
+    );
+
+    // Remove submissions related to this problem
+    await Submission.deleteMany({
+      problem: problem._id,
+    });
+
+    await Problem.findByIdAndDelete(problem._id);
+
+    return res.status(200).json({
       message: "Problem deleted successfully",
     });
   } catch (error) {
-    console.error("Delete Problem error:", error.message);
-    res.status(500).json({
+    console.error("Delete Problem Error:", error.message);
+
+    return res.status(500).json({
       message: "Server error",
     });
   }
 };
-
-
-
 
 export const getAdminProblemById = async (req, res) => {
   try {

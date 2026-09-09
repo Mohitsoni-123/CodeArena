@@ -4,7 +4,7 @@ import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
 const Problems = () => {
-  const { user } = useAuth();
+  const { token } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [problems, setProblems] = useState([]);
@@ -66,14 +66,46 @@ const Problems = () => {
     setSearchParams(params, { replace: true });
     setPage(1);
   }, [search, difficulty, setSearchParams]);
+  const [solvedProblems, setSolvedProblems] = useState(new Set());
 
-  const solvedProblems = useMemo(() => {
-    return new Set(
-      Array.isArray(user?.solvedProblems)
-        ? user.solvedProblems.map((id) => String(id))
-        : [],
-    );
-  }, [user]);
+  useEffect(() => {
+    const fetchSolvedProblems = async () => {
+      if (!token) {
+        setSolvedProblems(new Set());
+        return;
+      }
+
+      try {
+        const response = await api.get("/submissions/my");
+
+        const submissions = response.data?.submissions || [];
+
+        const acceptedProblems = new Set();
+
+        submissions.forEach((submission) => {
+          if (submission.status !== "Accepted") return;
+
+          const problemId =
+            submission.problem?._id ||
+            submission.problem?.id ||
+            submission.problem;
+
+          const problemVersion = submission.problemVersion;
+
+          if (problemId && problemVersion) {
+            acceptedProblems.add(`${String(problemId)}-${problemVersion}`);
+          }
+        });
+
+        setSolvedProblems(acceptedProblems);
+      } catch (error) {
+        console.error("Fetch solved problems error:", error);
+        setSolvedProblems(new Set());
+      }
+    };
+
+    fetchSolvedProblems();
+  }, [token]);
 
   const filteredProblems = useMemo(() => {
     let result = [...problems];
@@ -369,10 +401,10 @@ const Problems = () => {
           {!loading && !error && visibleProblems.length > 0 && (
             <div className="divide-y divide-white/5">
               {visibleProblems.map((problem, index) => {
+                const problemId = String(problem._id || problem.id);
                 const solved = solvedProblems.has(
-                  String(problem._id || problem.id),
+                  `${problemId}-${problem.version || 1}`,
                 );
-
                 const problemNumber = startIndex + index + 1;
 
                 return (

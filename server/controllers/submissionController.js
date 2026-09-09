@@ -180,6 +180,7 @@ export const createSubmission = async (req, res) => {
     const submission = await Submission.create({
       user: req.user.userId,
       problem: problemId,
+      problemVersion: problem.version,
       language,
       code,
       status: finalStatus,
@@ -335,7 +336,7 @@ export const getMySubmissions = async (req, res) => {
     const submissions = await Submission.find({
       user: req.user.userId,
     })
-      .populate("problem", "title difficulty")
+      .populate("problem", "title difficulty version")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
