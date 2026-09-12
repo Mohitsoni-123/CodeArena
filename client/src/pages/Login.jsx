@@ -26,50 +26,49 @@ const Login = () => {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!formData.email || !formData.password) {
-    setError("Please enter your email and password.");
-    return;
-  }
-
-  try {
-    setLoading(true);
-    setError("");
-
-    const response = await api.post("/auth/login", {
-      email: formData.email,
-      password: formData.password,
-    });
-
-    const { token, user } = response.data;
-
-    if (!token || !user) {
-      throw new Error("Invalid login response from server.");
+    if (!formData.email || !formData.password) {
+      setError("Please enter your email and password.");
+      return;
     }
 
-    // Save correct JWT and user data
-    login(token, user);
+    try {
+      setLoading(true);
+      setError("");
 
-    if (user?.role === "admin") {
-      navigate("/admin");
-    } else {
-      navigate("/problems");
+      const response = await api.post("/auth/login", {
+        email: formData.email,
+        password: formData.password,
+      });
+
+      const { token, user } = response.data;
+
+      if (!token || !user) {
+        throw new Error("Invalid login response from server.");
+      }
+
+      // Save correct JWT and user data
+      login(token, user);
+
+      if (user?.role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/problems");
+      }
+    } catch (err) {
+      setError(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Invalid email or password.",
+      );
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    setError(
-      err?.response?.data?.message ||
-        err?.message ||
-        "Invalid email or password."
-    );
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <main className="relative flex min-h-[calc(100vh-72px)] items-center justify-center overflow-hidden bg-slate-950 px-4 py-12 text-white sm:px-6">
-
       {/* Background */}
 
       <div className="pointer-events-none absolute left-1/2 top-0 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-violet-600/10 blur-[130px]" />
@@ -85,13 +84,11 @@ const Login = () => {
       {/* Card */}
 
       <div className="relative w-full max-w-md">
-
         {/* Glow */}
 
         <div className="absolute -inset-1 rounded-[2rem] bg-gradient-to-r from-violet-600/20 to-indigo-600/20 opacity-70 blur-xl" />
 
         <div className="relative rounded-[2rem] border border-white/10 bg-slate-900/90 p-6 shadow-2xl shadow-black/50 backdrop-blur-2xl sm:p-8">
-
           {/* Logo */}
 
           <div className="flex justify-center">
@@ -99,9 +96,7 @@ const Login = () => {
               to="/"
               className="group relative flex h-14 w-14 items-center justify-center rounded-2xl border border-violet-400/20 bg-gradient-to-br from-violet-600 to-indigo-600 shadow-xl shadow-violet-900/30 transition hover:-translate-y-1 hover:shadow-violet-500/20"
             >
-              <span className="font-mono text-sm font-black">
-                {"</>"}
-              </span>
+              <span className="font-mono text-sm font-black">{"</>"}</span>
             </Link>
           </div>
 
@@ -130,7 +125,6 @@ const Login = () => {
           {/* Form */}
 
           <form onSubmit={handleSubmit} className="mt-7 space-y-5">
-
             {/* Email */}
 
             <div>
@@ -163,15 +157,12 @@ const Login = () => {
                   Password
                 </label>
 
-                <button
-                  type="button"
-                  className="text-[11px] font-bold text-violet-400 transition hover:text-violet-300"
-                  onClick={() =>
-                    setError("Password reset is not available yet.")
-                  }
+                <Link
+                  to="/forgot-password"
+                  className="text-sm text-gray-600 hover:text-black hover:underline"
                 >
-                  Forgot password?
-                </button>
+                  Forgot Password?
+                </Link>
               </div>
 
               <div className="group flex items-center rounded-xl border border-white/10 bg-white/[0.03] transition focus-within:border-violet-500/40 focus-within:bg-white/[0.05] focus-within:shadow-lg focus-within:shadow-violet-900/10">
@@ -239,9 +230,7 @@ const Login = () => {
           {/* Register */}
 
           <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-center">
-            <p className="text-sm text-slate-500">
-              Don't have an account?
-            </p>
+            <p className="text-sm text-slate-500">Don't have an account?</p>
 
             <Link
               to="/register"

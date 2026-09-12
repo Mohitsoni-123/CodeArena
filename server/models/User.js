@@ -44,6 +44,38 @@ const userSchema = new mongoose.Schema(
         ref: "Problem",
       },
     ],
+
+    // ==============================
+    // Password Reset / OTP Fields
+    // ==============================
+
+    resetOtp: {
+      type: String,
+      default: null,
+    },
+    resetOtpExpire: {
+      type: Date,
+      default: null
+    },
+    resetOtpAttempts: {
+      type: Number,
+      default: 0,
+    },
+
+    resetOtpVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    resetToken: {
+      type: String,
+      default: null,
+    },
+
+    resetTokenExpire: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

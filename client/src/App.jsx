@@ -15,6 +15,7 @@ import SubmissionDetail from "./pages/SubmissionDetail";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ForgotPassword from "./pages/ForgotPassword";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProblems from "./pages/admin/AdminProblems";
@@ -46,6 +47,7 @@ const App = () => {
         />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
         <Route
           path="/submissions"
