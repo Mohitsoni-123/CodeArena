@@ -159,7 +159,7 @@ const Login = () => {
 
                 <Link
                   to="/forgot-password"
-                  className="text-sm text-gray-600 hover:text-black hover:underline"
+                  className="text-sm text-gray-600 hover:text-white hover:underline"
                 >
                   Forgot Password?
                 </Link>
