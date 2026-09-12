@@ -9,7 +9,7 @@ import nodemailer from "nodemailer";
 // ==========================================
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
+  host: "142.250.70.109",
   port: 587,
   secure: false,
   family: 4,
@@ -19,9 +19,9 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS,
   },
 
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 15000,
+  connectionTimeout: 15000,
+  greetingTimeout: 15000,
+  socketTimeout: 20000,
 });
 
 
