@@ -3,6 +3,59 @@ import { Link, useSearchParams } from "react-router-dom";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
+const practiceTabs = [
+  {
+    label: "Company Asked",
+    icon: (
+      <svg
+        className="h-[18px] w-[18px]"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <rect x="4" y="3" width="16" height="18" rx="1.5" />
+        <path d="M8 7h3M8 11h3M8 15h3M14 7h2M14 11h2M14 15h2" />
+      </svg>
+    ),
+  },
+  {
+    label: "Pattern Based",
+    icon: (
+      <svg
+        className="h-[18px] w-[18px]"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <rect x="4" y="3" width="16" height="18" rx="2" />
+        <path d="M8 8h8M8 12h8M8 16h5" />
+      </svg>
+    ),
+  },
+  {
+    label: "Asked Frequency",
+    icon: (
+      <svg
+        className="h-[18px] w-[18px]"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M3 12h4l3-7 4 14 3-7h4" />
+      </svg>
+    ),
+  },
+];
+
 const Problems = () => {
   const { token } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -18,10 +71,16 @@ const Problems = () => {
   );
 
   const [sortBy, setSortBy] = useState("number");
-
   const [page, setPage] = useState(1);
 
+  const [solvedProblems, setSolvedProblems] = useState(new Set());
+
+  const [activeCategory, setActiveCategory] = useState("All");
+  const [activePracticeTab, setActivePracticeTab] = useState("Pattern Based");
+
   const problemsPerPage = 10;
+
+  // ================= FETCH PROBLEMS =================
 
   useEffect(() => {
     const fetchProblems = async () => {
@@ -30,7 +89,6 @@ const Problems = () => {
         setError("");
 
         const response = await api.get("/problems");
-
         const data = response.data;
 
         if (Array.isArray(data)) {
@@ -52,6 +110,8 @@ const Problems = () => {
     fetchProblems();
   }, []);
 
+  // ================= URL FILTERS =================
+
   useEffect(() => {
     const params = {};
 
@@ -66,7 +126,8 @@ const Problems = () => {
     setSearchParams(params, { replace: true });
     setPage(1);
   }, [search, difficulty, setSearchParams]);
-  const [solvedProblems, setSolvedProblems] = useState(new Set());
+
+  // ================= FETCH SOLVED PROBLEMS =================
 
   useEffect(() => {
     const fetchSolvedProblems = async () => {
@@ -79,7 +140,6 @@ const Problems = () => {
         const response = await api.get("/submissions/my");
 
         const submissions = response.data?.submissions || [];
-
         const acceptedProblems = new Set();
 
         submissions.forEach((submission) => {
@@ -90,22 +150,50 @@ const Problems = () => {
             submission.problem?.id ||
             submission.problem;
 
-          const problemVersion = submission.problemVersion;
-
-          if (problemId && problemVersion) {
-            acceptedProblems.add(`${String(problemId)}-${problemVersion}`);
+          if (problemId) {
+            acceptedProblems.add(String(problemId));
           }
         });
 
         setSolvedProblems(acceptedProblems);
-      } catch (error) {
-        console.error("Fetch solved problems error:", error);
+      } catch (err) {
+        console.error("Fetch solved problems error:", err);
         setSolvedProblems(new Set());
       }
     };
 
     fetchSolvedProblems();
   }, [token]);
+
+  // ================= PROGRESS =================
+
+  const totalProblems = problems.length;
+
+  const solvedCount = problems.filter((problem) =>
+    solvedProblems.has(String(problem._id || problem.id)),
+  ).length;
+
+  const progressPercentage =
+    totalProblems > 0 ? Math.round((solvedCount / totalProblems) * 100) : 0;
+
+  const easyProblems = problems.filter(
+    (problem) => problem.difficulty === "Easy",
+  );
+
+  const mediumProblems = problems.filter(
+    (problem) => problem.difficulty === "Medium",
+  );
+
+  const hardProblems = problems.filter(
+    (problem) => problem.difficulty === "Hard",
+  );
+
+  const countSolved = (list) =>
+    list.filter((problem) =>
+      solvedProblems.has(String(problem._id || problem.id)),
+    ).length;
+
+  // ================= FILTER & SORT =================
 
   const filteredProblems = useMemo(() => {
     let result = [...problems];
@@ -128,6 +216,23 @@ const Problems = () => {
       result = result.filter((problem) => problem.difficulty === difficulty);
     }
 
+    if (activeCategory !== "All") {
+      result = result.filter(
+        (problem) => problem.difficulty === activeCategory,
+      );
+    }
+
+    if (activePracticeTab === "Company Asked") {
+      result = result.filter(
+        (problem) =>
+          Array.isArray(problem.companyTags) && problem.companyTags.length > 0,
+      );
+    }
+
+    if (activePracticeTab === "Asked Frequency") {
+      result.sort((a, b) => (b.frequency || 0) - (a.frequency || 0));
+    }
+
     if (sortBy === "title") {
       result.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
     }
@@ -145,7 +250,7 @@ const Problems = () => {
     }
 
     return result;
-  }, [problems, search, difficulty, sortBy]);
+  }, [problems, search, difficulty, sortBy, activeCategory, activePracticeTab]);
 
   const totalPages = Math.ceil(filteredProblems.length / problemsPerPage);
 
@@ -155,6 +260,8 @@ const Problems = () => {
     startIndex,
     startIndex + problemsPerPage,
   );
+
+  // ================= HELPERS =================
 
   const getDifficultyStyle = (level) => {
     if (level === "Easy") {
@@ -179,101 +286,183 @@ const Problems = () => {
   const clearFilters = () => {
     setSearch("");
     setDifficulty("All");
+    setActiveCategory("All");
     setSortBy("number");
+    setActivePracticeTab("Pattern Based");
     setPage(1);
   };
 
+  // ================= UI =================
+
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
-      {/* ================= HEADER ================= */}
+    <main className="min-h-screen bg-[#111113] text-white">
+      {/* ================= DASHBOARD HEADER ================= */}
 
-      <section className="relative overflow-hidden border-b border-white/10">
-        <div className="pointer-events-none absolute left-1/2 top-0 h-80 w-[700px] -translate-x-1/2 rounded-full bg-violet-600/10 blur-[120px]" />
+      <section className="border-b border-white/[0.08]">
+        <div className="mx-auto max-w-[1500px] px-4 py-10 sm:px-6 lg:px-8">
+          <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+            {/* LEFT SIDE */}
 
-        <div className="relative mx-auto max-w-[1500px] px-4 pb-10 pt-12 sm:px-6 lg:px-8">
-          <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
             <div>
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-violet-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-violet-400" />
-                Practice Arena
-              </div>
+              {/* BREADCRUMB */}
+              
 
-              <h1 className="text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">
-                Problems
+              <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                DSA Practice Set
               </h1>
 
-              <p className="mt-3 max-w-xl text-sm leading-7 text-slate-500 sm:text-base">
-                Practice algorithms, improve your problem-solving skills, and
-                become a stronger developer.
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-400 sm:text-base">
+                Build your problem-solving skills with DSA practice organized by
+                topic and pattern. Work through challenging problems
+                and prepare for coding interviews.
               </p>
+
+              {/* PRACTICE TABS (no onClick) */}
+
+              <div
+                role="tablist"
+                aria-label="Practice type"
+                className="mt-7 inline-flex max-w-full flex-wrap items-center rounded-xl border border-white/10 bg-[#141416] p-1"
+              >
+                {practiceTabs.map((tab, index) => (
+                  <div key={tab.label} className="flex items-center">
+                    {index !== 0 && <span className="h-5 w-px bg-white/10" />}
+
+                    <button
+                      type="button"
+                      className="flex items-center gap-2.5 rounded-lg px-4 py-2.5 text-sm font-medium text-slate-200"
+                    >
+                      {tab.icon}
+                      {tab.label}
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div className="flex gap-3">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3 text-center">
-                <p className="text-xl font-black text-white">
-                  {problems.length}
-                </p>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
-                  Problems
-                </p>
-              </div>
+            {/* RIGHT SIDE: PROGRESS CARD */}
 
-              <div className="rounded-2xl border border-emerald-500/10 bg-emerald-500/5 px-5 py-3 text-center">
-                <p className="text-xl font-black text-emerald-400">
-                  {solvedProblems.size}
-                </p>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
-                  Solved
-                </p>
+            <div>
+              <p className="mb-3 text-sm font-medium text-slate-400">
+                Your Progress
+              </p>
+
+              <div className="rounded-3xl border border-white/[0.08] bg-[#18181b] p-5 sm:p-6">
+                <div className="flex flex-wrap items-end gap-3">
+                  <span className="text-4xl font-bold tracking-tight">
+                    {progressPercentage}%
+                  </span>
+
+                  <span className="pb-1 text-sm text-slate-500">
+                    {solvedCount} / {totalProblems} problems solved
+                  </span>
+                </div>
+
+                {/* PROGRESS BAR */}
+
+                <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-violet-500 transition-all duration-500"
+                    style={{ width: `${progressPercentage}%` }}
+                  />
+                </div>
+
+                {/* DIFFICULTY PROGRESS */}
+
+                <div className="mt-7 grid grid-cols-3 gap-4">
+                  {[
+                    {
+                      label: "Basic",
+                      list: easyProblems,
+                      color: "bg-emerald-400",
+                    },
+                    {
+                      label: "Core",
+                      list: mediumProblems,
+                      color: "bg-amber-400",
+                    },
+                    { label: "Pro", list: hardProblems, color: "bg-red-400" },
+                  ].map(({ label, list, color }) => (
+                    <div key={label}>
+                      <p className="text-xs text-slate-500">{label}</p>
+
+                      <p className="mt-2 text-sm font-semibold">
+                        {countSolved(list)} / {list.length}
+                      </p>
+
+                      <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/10">
+                        <div
+                          className={`h-full rounded-full ${color}`}
+                          style={{
+                            width: `${
+                              list.length
+                                ? (countSolved(list) / list.length) * 100
+                                : 0
+                            }%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ================= CONTENT ================= */}
+      {/* ================= PROBLEMS CONTENT ================= */}
 
       <section className="mx-auto max-w-[1500px] px-4 py-8 sm:px-6 lg:px-8">
-        {/* Filters */}
+        {/* FILTER TOOLBAR */}
 
-        <div className="rounded-3xl border border-white/10 bg-white/[0.025] p-4 shadow-xl shadow-black/10 sm:p-5">
-          <div className="flex flex-col gap-4 xl:flex-row">
-            {/* Search */}
+        <div className="rounded-2xl border border-white/[0.08] bg-[#18181b]/70 p-3 sm:p-4">
+          <div className="flex flex-col gap-3 xl:flex-row">
+            {/* SEARCH */}
 
-            <div className="group flex flex-1 items-center rounded-xl border border-white/10 bg-slate-900/70 px-4 transition focus-within:border-violet-500/40 focus-within:bg-slate-900">
-              <span className="text-lg text-slate-600 group-focus-within:text-violet-400">
-                ⌕
-              </span>
+            <div className="flex flex-1 items-center rounded-xl border border-white/[0.08] bg-[#111827]/80 px-4 transition focus-within:border-violet-500/50">
+              <svg
+                className="h-5 w-5 shrink-0 text-slate-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <circle cx="11" cy="11" r="7" strokeWidth="1.8" />
+                <path d="m16 16 4 4" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
 
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by problem name or topic..."
-                className="w-full bg-transparent px-3 py-3 text-sm text-white outline-none placeholder:text-slate-700"
+                placeholder="Search problems..."
+                className="w-full bg-transparent px-3 py-3 text-sm text-white outline-none placeholder:text-slate-600"
               />
 
               {search && (
                 <button
                   onClick={() => setSearch("")}
-                  className="text-xs text-slate-600 transition hover:text-white"
+                  className="text-lg text-slate-500 hover:text-white"
                 >
                   ×
                 </button>
               )}
             </div>
 
-            {/* Difficulty */}
+            {/* DIFFICULTY */}
 
-            <div className="flex rounded-xl border border-white/10 bg-slate-900/70 p-1">
+            <div className="flex flex-wrap rounded-xl border border-white/[0.08] bg-[#111827]/80 p-1">
               {["All", "Easy", "Medium", "Hard"].map((level) => (
                 <button
                   key={level}
-                  onClick={() => setDifficulty(level)}
-                  className={`rounded-lg px-3 py-2 text-xs font-bold transition sm:px-4 ${
+                  onClick={() => {
+                    setDifficulty(level);
+                    setPage(1);
+                  }}
+                  className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
                     difficulty === level
-                      ? "bg-violet-500/15 text-violet-300 shadow-sm"
-                      : "text-slate-500 hover:bg-white/5 hover:text-white"
+                      ? "bg-violet-500/20 text-violet-300"
+                      : "text-slate-400 hover:text-white"
                   }`}
                 >
                   {level}
@@ -281,12 +470,12 @@ const Problems = () => {
               ))}
             </div>
 
-            {/* Sort */}
+            {/* SORT */}
 
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-xs font-bold text-slate-400 outline-none transition focus:border-violet-500/40"
+              className="rounded-xl border border-white/[0.08] bg-[#111827] px-4 py-3 text-xs font-semibold text-slate-300 outline-none focus:border-violet-500/50"
             >
               <option value="number">Sort: Default</option>
               <option value="title">Sort: Title</option>
@@ -294,34 +483,37 @@ const Problems = () => {
             </select>
           </div>
 
-          {/* Active filters */}
+          {/* RESULT COUNT */}
 
-          {(search || difficulty !== "All") && (
-            <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-4">
-              <p className="text-xs text-slate-600">
-                Showing{" "}
-                <span className="font-bold text-slate-400">
-                  {filteredProblems.length}
-                </span>{" "}
-                matching problems
-              </p>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.06] pt-4">
+            <p className="text-xs text-slate-500">
+              Showing{" "}
+              <span className="font-semibold text-slate-300">
+                {filteredProblems.length}
+              </span>{" "}
+              problems
+            </p>
 
+            {(search ||
+              difficulty !== "All" ||
+              activeCategory !== "All" ||
+              activePracticeTab !== "Pattern Based") && (
               <button
                 onClick={clearFilters}
-                className="text-xs font-bold text-violet-400 transition hover:text-violet-300"
+                className="text-xs font-semibold text-violet-400 transition hover:text-violet-300"
               >
-                Clear filters
+                Reset filters
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
-        {/* ================= PROBLEM LIST ================= */}
+        {/* ================= PROBLEMS TABLE ================= */}
 
-        <div className="mt-6 overflow-hidden rounded-3xl border border-white/10 bg-slate-900/50 shadow-2xl shadow-black/10">
-          {/* Table Header */}
+        <div className="mt-6 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0b1020]/80">
+          {/* TABLE HEADER */}
 
-          <div className="hidden grid-cols-[70px_minmax(0,1fr)_140px_110px_100px] border-b border-white/10 bg-white/[0.025] px-6 py-4 text-[10px] font-black uppercase tracking-wider text-slate-600 md:grid">
+          <div className="hidden grid-cols-[65px_minmax(0,1fr)_130px_120px_100px] border-b border-white/[0.08] bg-white/[0.025] px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500 md:grid">
             <span>#</span>
             <span>Problem</span>
             <span>Difficulty</span>
@@ -329,133 +521,130 @@ const Problems = () => {
             <span className="text-right">Status</span>
           </div>
 
-          {/* Loading */}
+          {/* LOADING */}
 
           {loading && (
-            <div className="divide-y divide-white/5">
+            <div className="divide-y divide-white/[0.05]">
               {[1, 2, 3, 4, 5].map((item) => (
-                <div key={item} className="animate-pulse px-5 py-5 md:px-6">
+                <div key={item} className="animate-pulse px-5 py-6">
                   <div className="flex items-center gap-4">
                     <div className="h-8 w-8 rounded-lg bg-white/5" />
 
                     <div className="flex-1">
                       <div className="h-4 w-48 rounded bg-white/5" />
-                      <div className="mt-2 h-3 w-32 rounded bg-white/5" />
+                      <div className="mt-3 h-3 w-32 rounded bg-white/5" />
                     </div>
 
-                    <div className="h-7 w-20 rounded-lg bg-white/5" />
+                    <div className="h-7 w-16 rounded-lg bg-white/5" />
                   </div>
                 </div>
               ))}
             </div>
           )}
 
-          {/* Error */}
+          {/* ERROR */}
 
           {!loading && error && (
             <div className="px-6 py-16 text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/10 text-xl">
-                ⚠
-              </div>
+              <div className="text-3xl">⚠️</div>
 
-              <h2 className="mt-5 text-lg font-black">
+              <h2 className="mt-4 text-lg font-bold">
                 Unable to load problems
               </h2>
 
-              <p className="mt-2 text-sm text-slate-600">{error}</p>
+              <p className="mt-2 text-sm text-slate-500">{error}</p>
 
               <button
                 onClick={() => window.location.reload()}
-                className="mt-6 rounded-xl bg-violet-600 px-5 py-3 text-xs font-black text-white transition hover:bg-violet-500"
+                className="mt-5 rounded-xl bg-violet-600 px-5 py-3 text-xs font-bold hover:bg-violet-500"
               >
                 Try Again
               </button>
             </div>
           )}
 
-          {/* Empty */}
+          {/* EMPTY STATE */}
 
           {!loading && !error && filteredProblems.length === 0 && (
             <div className="px-6 py-20 text-center">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-2xl">
-                ⌕
-              </div>
+              <div className="text-4xl text-slate-600">⌕</div>
 
-              <h2 className="mt-5 text-lg font-black">No problems found</h2>
+              <h2 className="mt-4 text-lg font-bold">No problems found</h2>
 
-              <p className="mt-2 text-sm text-slate-600">
-                Try changing your search or filters.
+              <p className="mt-2 text-sm text-slate-500">
+                Try another search or change the filters.
               </p>
 
               <button
                 onClick={clearFilters}
-                className="mt-6 rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-xs font-black text-slate-300 transition hover:bg-white/10 hover:text-white"
+                className="mt-5 rounded-xl border border-white/10 px-5 py-3 text-xs font-bold text-slate-300 hover:bg-white/5"
               >
                 Clear Filters
               </button>
             </div>
           )}
 
-          {/* Problems */}
+          {/* PROBLEM ROWS */}
 
           {!loading && !error && visibleProblems.length > 0 && (
-            <div className="divide-y divide-white/5">
+            <div className="divide-y divide-white/[0.05]">
               {visibleProblems.map((problem, index) => {
                 const problemId = String(problem._id || problem.id);
-                const solved = solvedProblems.has(
-                  `${problemId}-${problem.version || 1}`,
-                );
+
+                const solved = solvedProblems.has(problemId);
+
                 const problemNumber = startIndex + index + 1;
 
                 return (
                   <Link
-                    key={problem._id || problem.id}
-                    to={`/problems/${problem._id || problem.id}`}
-                    className="group block px-5 py-5 transition duration-200 hover:bg-white/[0.035] md:px-6"
+                    key={problemId}
+                    to={`/problems/${problemId}`}
+                    className="group block px-5 py-5 transition hover:bg-white/[0.025] md:px-6"
                   >
-                    {/* Desktop */}
+                    {/* DESKTOP ROW */}
 
-                    <div className="hidden grid-cols-[70px_minmax(0,1fr)_140px_110px_100px] items-center md:grid">
-                      {/* Number */}
+                    <div className="hidden grid-cols-[65px_minmax(0,1fr)_130px_120px_100px] items-center md:grid">
+                      {/* NUMBER / SOLVED */}
 
                       <div>
                         {solved ? (
-                          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-sm font-black text-emerald-400">
+                          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 font-bold text-emerald-400">
                             ✓
-                          </div>
+                          </span>
                         ) : (
-                          <span className="font-mono text-sm text-slate-600">
+                          <span className="font-mono text-sm text-slate-500">
                             {problemNumber}
                           </span>
                         )}
                       </div>
 
-                      {/* Title */}
+                      {/* TITLE / TOPICS */}
 
-                      <div className="min-w-0 pr-6">
-                        <h3 className="truncate text-sm font-bold text-slate-200 transition group-hover:text-violet-300">
+                      <div className="min-w-0 pr-5">
+                        <h3 className="truncate text-sm font-semibold text-slate-200 transition group-hover:text-violet-300">
                           {problem.title}
                         </h3>
 
-                        {problem.topics?.length > 0 && (
-                          <div className="mt-2 flex flex-wrap gap-1.5">
-                            {problem.topics.slice(0, 3).map((topic) => (
-                              <span
-                                key={topic}
-                                className="rounded-md border border-white/5 bg-white/[0.03] px-2 py-0.5 text-[9px] font-semibold text-slate-600"
-                              >
-                                {topic}
-                              </span>
-                            ))}
-                          </div>
-                        )}
+                        {Array.isArray(problem.topics) &&
+                          problem.topics.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {problem.topics.slice(0, 4).map((topic) => (
+                                <span
+                                  key={topic}
+                                  className="rounded-md border border-white/[0.06] bg-white/[0.025] px-2 py-1 text-[9px] text-slate-500"
+                                >
+                                  {topic}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                       </div>
 
-                      {/* Difficulty */}
+                      {/* DIFFICULTY */}
 
                       <div>
                         <span
-                          className={`inline-flex rounded-lg border px-2.5 py-1.5 text-[10px] font-black ${getDifficultyStyle(
+                          className={`inline-flex rounded-lg border px-2.5 py-1.5 text-[10px] font-bold ${getDifficultyStyle(
                             problem.difficulty,
                           )}`}
                         >
@@ -463,50 +652,46 @@ const Problems = () => {
                         </span>
                       </div>
 
-                      {/* Acceptance */}
+                      {/* ACCEPTANCE */}
 
-                      <div className="font-mono text-xs text-slate-600">
+                      <div className="font-mono text-xs text-slate-500">
                         {getAcceptance(problem)}
                       </div>
 
-                      {/* Status */}
+                      {/* STATUS */}
 
                       <div className="text-right">
                         {solved ? (
-                          <span className="text-xs font-bold text-emerald-400">
+                          <span className="text-xs font-semibold text-emerald-400">
                             Solved
                           </span>
                         ) : (
-                          <span className="text-xs text-slate-700">
+                          <span className="text-xs text-slate-600">
                             Unsolved
                           </span>
                         )}
                       </div>
                     </div>
 
-                    {/* Mobile */}
+                    {/* MOBILE ROW */}
 
                     <div className="flex items-start gap-3 md:hidden">
-                      <div className="shrink-0 pt-0.5">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.04] font-mono text-xs text-slate-400">
                         {solved ? (
-                          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-sm font-black text-emerald-400">
-                            ✓
-                          </div>
+                          <span className="font-bold text-emerald-400">✓</span>
                         ) : (
-                          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.04] font-mono text-xs text-slate-600">
-                            {problemNumber}
-                          </div>
+                          problemNumber
                         )}
                       </div>
 
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-3">
-                          <h3 className="text-sm font-bold leading-6 text-slate-200 group-hover:text-violet-300">
+                          <h3 className="text-sm font-semibold leading-6 text-slate-200 group-hover:text-violet-300">
                             {problem.title}
                           </h3>
 
                           <span
-                            className={`shrink-0 rounded-lg border px-2 py-1 text-[9px] font-black ${getDifficultyStyle(
+                            className={`shrink-0 rounded-lg border px-2 py-1 text-[9px] font-bold ${getDifficultyStyle(
                               problem.difficulty,
                             )}`}
                           >
@@ -514,24 +699,27 @@ const Problems = () => {
                           </span>
                         </div>
 
-                        {problem.topics?.length > 0 && (
-                          <div className="mt-2 flex flex-wrap gap-1.5">
-                            {problem.topics.slice(0, 3).map((topic) => (
-                              <span
-                                key={topic}
-                                className="rounded-md border border-white/5 bg-white/[0.03] px-2 py-0.5 text-[9px] text-slate-600"
-                              >
-                                {topic}
-                              </span>
-                            ))}
-                          </div>
-                        )}
+                        {Array.isArray(problem.topics) &&
+                          problem.topics.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {problem.topics.slice(0, 3).map((topic) => (
+                                <span
+                                  key={topic}
+                                  className="rounded-md border border-white/[0.06] bg-white/[0.025] px-2 py-1 text-[9px] text-slate-500"
+                                >
+                                  {topic}
+                                </span>
+                              ))}
+                            </div>
+                          )}
 
-                        <div className="mt-3 flex items-center gap-4 text-[10px] font-semibold text-slate-700">
+                        <div className="mt-3 flex flex-wrap items-center gap-3 text-[10px] text-slate-500">
                           <span>Acceptance: {getAcceptance(problem)}</span>
 
                           {solved && (
-                            <span className="text-emerald-400">✓ Solved</span>
+                            <span className="font-semibold text-emerald-400">
+                              ✓ Solved
+                            </span>
                           )}
                         </div>
                       </div>
@@ -546,33 +734,41 @@ const Problems = () => {
         {/* ================= PAGINATION ================= */}
 
         {!loading && !error && totalPages > 1 && (
-          <div className="mt-6 flex items-center justify-between">
-            <p className="text-xs text-slate-600">
-              Page <span className="font-bold text-slate-400">{page}</span> of{" "}
-              <span className="font-bold text-slate-400">{totalPages}</span>
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+            <p className="text-xs text-slate-500">
+              Page <span className="font-semibold text-white">{page}</span> of{" "}
+              <span className="font-semibold text-white">{totalPages}</span>
             </p>
 
             <div className="flex items-center gap-2">
               <button
                 disabled={page === 1}
                 onClick={() => setPage((current) => Math.max(1, current - 1))}
-                className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-xs font-bold text-slate-400 transition hover:bg-white/[0.07] hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-xs font-semibold text-slate-300 transition hover:bg-white/[0.07] disabled:cursor-not-allowed disabled:opacity-30"
               >
                 ← Previous
               </button>
 
               <button
-                disabled={page === totalPages}
+                disabled={page >= totalPages}
                 onClick={() =>
                   setPage((current) => Math.min(totalPages, current + 1))
                 }
-                className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-xs font-bold text-slate-400 transition hover:bg-white/[0.07] hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-xs font-semibold text-slate-300 transition hover:bg-white/[0.07] disabled:cursor-not-allowed disabled:opacity-30"
               >
                 Next →
               </button>
             </div>
           </div>
         )}
+
+        {/* FOOTER */}
+
+        <div className="mt-10 border-t border-white/[0.06] pt-6 text-center">
+          <p className="text-xs text-slate-600">
+            Keep practicing. Every problem makes you better.
+          </p>
+        </div>
       </section>
     </main>
   );
