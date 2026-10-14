@@ -56,6 +56,44 @@ const practiceTabs = [
   },
 ];
 
+// ================= SMALL ICON COMPONENTS =================
+
+const LockIcon = () => (
+  <svg
+    className="h-[18px] w-[18px] text-blue-500"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+  >
+    <path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Z" />
+  </svg>
+);
+
+const StarIcon = ({ filled }) => (
+  <svg
+    className="h-[18px] w-[18px]"
+    viewBox="0 0 24 24"
+    fill={filled ? "currentColor" : "none"}
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3Z" />
+  </svg>
+);
+
+const StatusIcon = ({ solved }) => (
+  <svg
+    className={`h-4 w-4 shrink-0 ${
+      solved ? "text-emerald-500" : "text-slate-500"
+    }`}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+  >
+    <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm-1.2 14.2-3.9-3.9 1.4-1.4 2.5 2.5 5.3-5.3 1.4 1.4-6.7 6.7Z" />
+  </svg>
+);
+
 const Problems = () => {
   const { token } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -74,6 +112,16 @@ const Problems = () => {
   const [page, setPage] = useState(1);
 
   const [solvedProblems, setSolvedProblems] = useState(new Set());
+
+  // ⭐ starred problems (saved in localStorage)
+  const [starredProblems, setStarredProblems] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("starredProblems") || "[]");
+      return new Set(saved);
+    } catch {
+      return new Set();
+    }
+  });
 
   const [activeCategory, setActiveCategory] = useState("All");
   const [activePracticeTab, setActivePracticeTab] = useState("Pattern Based");
@@ -164,6 +212,32 @@ const Problems = () => {
 
     fetchSolvedProblems();
   }, [token]);
+
+  // ================= STAR TOGGLE =================
+
+  const toggleStar = (e, problemId) => {
+    // star click pe problem page open na ho
+    e.preventDefault();
+    e.stopPropagation();
+
+    setStarredProblems((prev) => {
+      const next = new Set(prev);
+
+      if (next.has(problemId)) {
+        next.delete(problemId);
+      } else {
+        next.add(problemId);
+      }
+
+      try {
+        localStorage.setItem("starredProblems", JSON.stringify([...next]));
+      } catch (err) {
+        console.error("Save starred problems error:", err);
+      }
+
+      return next;
+    });
+  };
 
   // ================= PROGRESS =================
 
@@ -275,12 +349,12 @@ const Problems = () => {
     return "border-red-500/20 bg-red-500/10 text-red-400";
   };
 
-  const getAcceptance = (problem) => {
-    if (problem.acceptance !== undefined && problem.acceptance !== null) {
-      return `${problem.acceptance}%`;
-    }
-
-    return "—";
+  // Easy -> Basic, Medium -> Core, Hard -> Pro
+  const getDifficultyLabel = (level) => {
+    if (level === "Easy") return "Easy";
+    if (level === "Medium") return "Medium";
+    if (level === "Hard") return "Hard";
+    return level;
   };
 
   const clearFilters = () => {
@@ -291,6 +365,10 @@ const Problems = () => {
     setActivePracticeTab("Pattern Based");
     setPage(1);
   };
+
+  // shared grid for header + rows
+  const gridCols =
+    "md:grid-cols-[minmax(0,1.3fr)_110px_110px_minmax(0,1fr)_60px]";
 
   // ================= UI =================
 
@@ -304,9 +382,6 @@ const Problems = () => {
             {/* LEFT SIDE */}
 
             <div>
-              {/* BREADCRUMB */}
-              
-
               <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
                 DSA Practice Set
               </h1>
@@ -372,16 +447,16 @@ const Problems = () => {
                 <div className="mt-7 grid grid-cols-3 gap-4">
                   {[
                     {
-                      label: "Basic",
+                      label: "Easy",
                       list: easyProblems,
                       color: "bg-emerald-400",
                     },
                     {
-                      label: "Core",
+                      label: "Medium",
                       list: mediumProblems,
                       color: "bg-amber-400",
                     },
-                    { label: "Pro", list: hardProblems, color: "bg-red-400" },
+                    { label: "Hard", list: hardProblems, color: "bg-red-400" },
                   ].map(({ label, list, color }) => (
                     <div key={label}>
                       <p className="text-xs text-slate-500">{label}</p>
@@ -510,15 +585,17 @@ const Problems = () => {
 
         {/* ================= PROBLEMS TABLE ================= */}
 
-        <div className="mt-6 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0b1020]/80">
+        <div className="mt-6 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#151517]">
           {/* TABLE HEADER */}
 
-          <div className="hidden grid-cols-[65px_minmax(0,1fr)_130px_120px_100px] border-b border-white/[0.08] bg-white/[0.025] px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500 md:grid">
-            <span>#</span>
+          <div
+            className={`hidden items-center border-b border-white/[0.08] px-6 py-4 text-sm font-medium text-slate-400 md:grid ${gridCols}`}
+          >
             <span>Problem</span>
-            <span>Difficulty</span>
-            <span>Acceptance</span>
-            <span className="text-right">Status</span>
+            <span className="text-center">Difficulty</span>
+            <span className="text-center">Companies</span>
+            <span className="text-center">Topics</span>
+            <span />
           </div>
 
           {/* LOADING */}
@@ -592,6 +669,7 @@ const Problems = () => {
                 const problemId = String(problem._id || problem.id);
 
                 const solved = solvedProblems.has(problemId);
+                const starred = starredProblems.has(problemId);
 
                 const problemNumber = startIndex + index + 1;
 
@@ -599,35 +677,47 @@ const Problems = () => {
                   <Link
                     key={problemId}
                     to={`/problems/${problemId}`}
-                    className="group block px-5 py-5 transition hover:bg-white/[0.025] md:px-6"
+                    className="group block px-5 py-4 transition hover:bg-white/[0.025] md:px-6"
                   >
                     {/* DESKTOP ROW */}
 
-                    <div className="hidden grid-cols-[65px_minmax(0,1fr)_130px_120px_100px] items-center md:grid">
-                      {/* NUMBER / SOLVED */}
+                    <div
+                      className={`hidden items-center md:grid ${gridCols}`}
+                    >
+                      {/* STATUS ICON + NUMBER + TITLE */}
 
-                      <div>
-                        {solved ? (
-                          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 font-bold text-emerald-400">
-                            ✓
-                          </span>
-                        ) : (
-                          <span className="font-mono text-sm text-slate-500">
-                            {problemNumber}
-                          </span>
-                        )}
+                      <div className="flex min-w-0 items-center gap-3 pr-4">
+                        <StatusIcon solved={solved} />
+
+                        <h3 className="truncate text-sm font-bold text-white transition group-hover:text-violet-300">
+                          {problemNumber}. {problem.title}
+                        </h3>
                       </div>
 
-                      {/* TITLE / TOPICS */}
+                      {/* DIFFICULTY */}
 
-                      <div className="min-w-0 pr-5">
-                        <h3 className="truncate text-sm font-semibold text-slate-200 transition group-hover:text-violet-300">
-                          {problem.title}
-                        </h3>
+                      <div className="flex justify-center">
+                        <span
+                          className={`inline-flex rounded-md border px-2.5 py-1 text-[11px] font-semibold ${getDifficultyStyle(
+                            problem.difficulty,
+                          )}`}
+                        >
+                          {getDifficultyLabel(problem.difficulty)}
+                        </span>
+                      </div>
 
+                      {/* COMPANIES (locked for all) */}
+
+                      <div className="flex justify-center">
+                        <LockIcon />
+                      </div>
+
+                      {/* TOPICS (same as before) */}
+
+                      <div className="flex min-w-0 justify-center">
                         {Array.isArray(problem.topics) &&
                           problem.topics.length > 0 && (
-                            <div className="mt-2 flex flex-wrap gap-1.5">
+                            <div className="flex flex-wrap justify-center gap-1.5">
                               {problem.topics.slice(0, 4).map((topic) => (
                                 <span
                                   key={topic}
@@ -640,63 +730,51 @@ const Problems = () => {
                           )}
                       </div>
 
-                      {/* DIFFICULTY */}
+                      {/* STAR */}
 
-                      <div>
-                        <span
-                          className={`inline-flex rounded-lg border px-2.5 py-1.5 text-[10px] font-bold ${getDifficultyStyle(
-                            problem.difficulty,
-                          )}`}
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          aria-label={starred ? "Remove star" : "Star problem"}
+                          onClick={(e) => toggleStar(e, problemId)}
+                          className={`rounded-md p-1.5 transition ${
+                            starred
+                              ? "text-amber-400"
+                              : "text-slate-500 hover:text-white"
+                          }`}
                         >
-                          {problem.difficulty}
-                        </span>
-                      </div>
-
-                      {/* ACCEPTANCE */}
-
-                      <div className="font-mono text-xs text-slate-500">
-                        {getAcceptance(problem)}
-                      </div>
-
-                      {/* STATUS */}
-
-                      <div className="text-right">
-                        {solved ? (
-                          <span className="text-xs font-semibold text-emerald-400">
-                            Solved
-                          </span>
-                        ) : (
-                          <span className="text-xs text-slate-600">
-                            Unsolved
-                          </span>
-                        )}
+                          <StarIcon filled={starred} />
+                        </button>
                       </div>
                     </div>
 
                     {/* MOBILE ROW */}
 
                     <div className="flex items-start gap-3 md:hidden">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.04] font-mono text-xs text-slate-400">
-                        {solved ? (
-                          <span className="font-bold text-emerald-400">✓</span>
-                        ) : (
-                          problemNumber
-                        )}
+                      <div className="pt-1.5">
+                        <StatusIcon solved={solved} />
                       </div>
 
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-3">
-                          <h3 className="text-sm font-semibold leading-6 text-slate-200 group-hover:text-violet-300">
-                            {problem.title}
+                          <h3 className="text-sm font-bold leading-6 text-white group-hover:text-violet-300">
+                            {problemNumber}. {problem.title}
                           </h3>
 
-                          <span
-                            className={`shrink-0 rounded-lg border px-2 py-1 text-[9px] font-bold ${getDifficultyStyle(
-                              problem.difficulty,
-                            )}`}
+                          <button
+                            type="button"
+                            aria-label={
+                              starred ? "Remove star" : "Star problem"
+                            }
+                            onClick={(e) => toggleStar(e, problemId)}
+                            className={`shrink-0 rounded-md p-1 transition ${
+                              starred
+                                ? "text-amber-400"
+                                : "text-slate-500 hover:text-white"
+                            }`}
                           >
-                            {problem.difficulty}
-                          </span>
+                            <StarIcon filled={starred} />
+                          </button>
                         </div>
 
                         {Array.isArray(problem.topics) &&
@@ -713,14 +791,19 @@ const Problems = () => {
                             </div>
                           )}
 
-                        <div className="mt-3 flex flex-wrap items-center gap-3 text-[10px] text-slate-500">
-                          <span>Acceptance: {getAcceptance(problem)}</span>
+                        <div className="mt-3 flex flex-wrap items-center gap-3">
+                          <span
+                            className={`rounded-md border px-2 py-1 text-[10px] font-semibold ${getDifficultyStyle(
+                              problem.difficulty,
+                            )}`}
+                          >
+                            {getDifficultyLabel(problem.difficulty)}
+                          </span>
 
-                          {solved && (
-                            <span className="font-semibold text-emerald-400">
-                              ✓ Solved
-                            </span>
-                          )}
+                          <span className="flex items-center gap-1.5 text-[10px] text-slate-500">
+                            <LockIcon />
+                            Companies
+                          </span>
                         </div>
                       </div>
                     </div>

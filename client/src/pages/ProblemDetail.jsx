@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -9,18 +9,133 @@ import {
   Clock3,
   Code2,
   Copy,
-  FileCode2,
   Lock,
   MemoryStick,
   Play,
   RotateCcw,
-  Send,
+  Rocket,
   Sparkles,
   Terminal,
   X,
-  Zap,
 } from "lucide-react";
 import api from "../services/api";
+
+// --------------------------------------------------
+// STARTER CODE
+// --------------------------------------------------
+
+const CPP_STARTER = `#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    // Write your code here
+    return 0;
+}`;
+
+const STARTERS = {
+  cpp: CPP_STARTER,
+  c: `#include <stdio.h>
+
+int main() {
+    // Write your code here
+    return 0;
+}`,
+  python: `# Write your code here
+`,
+  javascript: `// Write your code here
+`,
+};
+
+const getStarter = (problem, lang) =>
+  lang === "cpp" && problem?.starterCode
+    ? problem.starterCode
+    : STARTERS[lang] || "";
+
+// --------------------------------------------------
+// SYNTAX HIGHLIGHTING
+// --------------------------------------------------
+
+const KEYWORDS = {
+  cpp: "if else for while do return break continue class struct public private protected using namespace new delete const static template typename switch case default try catch throw true false nullptr auto this virtual override inline",
+  c: "if else for while do return break continue struct const static switch case default typedef enum sizeof NULL",
+  python:
+    "def class if elif else for while return break continue import from as in is not and or pass lambda try except finally with yield True False None",
+  javascript:
+    "function const let var if else for while do return break continue class new this switch case default try catch throw import export from async await true false null undefined of in",
+};
+
+const TYPES = {
+  cpp: "int long short char bool void float double unsigned signed string vector map set unordered_map unordered_set pair queue stack deque priority_queue size_t",
+  c: "int long short char void float double unsigned signed size_t",
+  python: "int str list dict set tuple float bool",
+  javascript: "Array Object Map Set Promise Number String Boolean",
+};
+
+const toSet = (str) => new Set(str.split(" "));
+
+const tokenColors = {
+  comment: "italic text-[#6a9955]",
+  pre: "text-[#c586c0]",
+  string: "text-[#ce9178]",
+  number: "text-[#b5cea8]",
+  keyword: "text-[#569cd6]",
+  type: "text-[#4ec9b0]",
+  fn: "text-[#dcdcaa]",
+};
+
+const highlightCode = (code, lang) => {
+  const keywords = toSet(KEYWORDS[lang] || "");
+  const types = toSet(TYPES[lang] || "");
+  const isPy = lang === "python";
+  const isC = lang === "cpp" || lang === "c";
+
+  const comment = isPy ? "#[^\\n]*" : "\\/\\/[^\\n]*|\\/\\*[\\s\\S]*?\\*\\/";
+  const pre = isC ? "^[ \\t]*#[^\\n]*" : "(?!)";
+
+  const regex = new RegExp(
+    `(${comment})|(${pre})|("(?:\\\\.|[^"\\\\\\n])*"|'(?:\\\\.|[^'\\\\\\n])*')|(\\b\\d+(?:\\.\\d+)?\\b)|(\\b[A-Za-z_]\\w*\\b)`,
+    "gm"
+  );
+
+  const nodes = [];
+  let last = 0;
+  let match;
+  let key = 0;
+
+  while ((match = regex.exec(code)) !== null) {
+    if (match.index > last) nodes.push(code.slice(last, match.index));
+
+    const [text, cmt, prep, str, num, word] = match;
+    let cls = "";
+
+    if (cmt) cls = tokenColors.comment;
+    else if (prep) cls = tokenColors.pre;
+    else if (str) cls = tokenColors.string;
+    else if (num) cls = tokenColors.number;
+    else if (word) {
+      if (keywords.has(word)) cls = tokenColors.keyword;
+      else if (types.has(word)) cls = tokenColors.type;
+      else if (code[match.index + text.length] === "(")
+        cls = tokenColors.fn;
+    }
+
+    nodes.push(
+      cls ? (
+        <span key={key++} className={cls}>
+          {text}
+        </span>
+      ) : (
+        text
+      )
+    );
+
+    last = match.index + text.length;
+    if (text.length === 0) regex.lastIndex++;
+  }
+
+  if (last < code.length) nodes.push(code.slice(last));
+  return nodes;
+};
 
 const ProblemDetail = () => {
   const { id } = useParams();
@@ -43,6 +158,9 @@ const ProblemDetail = () => {
   const [copied, setCopied] = useState(false);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
 
+  const gutterRef = useRef(null);
+  const preRef = useRef(null);
+
   // --------------------------------------------------
   // FETCH PROBLEM
   // --------------------------------------------------
@@ -57,19 +175,7 @@ const ProblemDetail = () => {
         const data = response.data?.problem || response.data;
 
         setProblem(data);
-
-        const starter =
-          data?.starterCode ||
-          `#include <bits/stdc++.h>
-using namespace std;
-
-int main() {
-    // Write your code here
-
-    return 0;
-}`;
-
-        setCode(starter);
+        setCode(getStarter(data, "cpp"));
       } catch (error) {
         console.error("Failed to fetch problem:", error);
 
@@ -89,26 +195,10 @@ int main() {
   // --------------------------------------------------
 
   const languages = [
-    {
-      value: "cpp",
-      label: "C++",
-      icon: "C++",
-    },
-    {
-      value: "c",
-      label: "C",
-      icon: "C",
-    },
-    {
-      value: "python",
-      label: "Python",
-      icon: "Py",
-    },
-    {
-      value: "javascript",
-      label: "JavaScript",
-      icon: "JS",
-    },
+    { value: "cpp", label: "C++" },
+    { value: "c", label: "C" },
+    { value: "python", label: "Python" },
+    { value: "javascript", label: "JavaScript" },
   ];
 
   const selectedLanguage =
@@ -143,7 +233,7 @@ int main() {
     difficultyConfig[problem?.difficulty] || difficultyConfig.Easy;
 
   // --------------------------------------------------
-  // COPY CODE
+  // EDITOR HANDLERS
   // --------------------------------------------------
 
   const handleCopyCode = async () => {
@@ -160,25 +250,51 @@ int main() {
     }
   };
 
-  // --------------------------------------------------
-  // RESET CODE
-  // --------------------------------------------------
-
   const handleResetCode = () => {
     if (!problem) return;
-
-    setCode(
-      problem.starterCode ||
-        `#include <bits/stdc++.h>
-using namespace std;
-
-int main() {
-    // Write your code here
-
-    return 0;
-}`
-    );
+    setCode(getStarter(problem, language));
   };
+
+  const handleLanguageChange = (nextLang) => {
+    // If the user has not edited the code, swap in the new language's starter
+    if (code === getStarter(problem, language)) {
+      setCode(getStarter(problem, nextLang));
+    }
+
+    setLanguage(nextLang);
+    setShowLanguageMenu(false);
+  };
+
+  const handleEditorScroll = (e) => {
+    const { scrollTop, scrollLeft } = e.target;
+
+    if (gutterRef.current) gutterRef.current.scrollTop = scrollTop;
+
+    if (preRef.current) {
+      preRef.current.scrollTop = scrollTop;
+      preRef.current.scrollLeft = scrollLeft;
+    }
+  };
+
+  const handleEditorKeyDown = (e) => {
+    if (e.key === "Tab") {
+      e.preventDefault();
+
+      const { selectionStart, selectionEnd } = e.target;
+      const target = e.target;
+
+      const next =
+        code.slice(0, selectionStart) + "    " + code.slice(selectionEnd);
+
+      setCode(next);
+
+      requestAnimationFrame(() => {
+        target.selectionStart = target.selectionEnd = selectionStart + 4;
+      });
+    }
+  };
+
+  const lineCount = code.split("\n").length;
 
   // --------------------------------------------------
   // RUN EXAMPLES
@@ -227,8 +343,7 @@ int main() {
           const expectedOutput = (example.output || "").trim();
 
           const passed =
-            data.status === "Accepted" &&
-            actualOutput === expectedOutput;
+            data.status === "Accepted" && actualOutput === expectedOutput;
 
           results.push({
             type: "Example",
@@ -248,8 +363,7 @@ int main() {
             expectedOutput: example.output || "",
             actualOutput: "",
             passed: false,
-            status:
-              error.response?.data?.message || "Runtime Error",
+            status: error.response?.data?.message || "Runtime Error",
             error:
               error.response?.data?.error ||
               error.message ||
@@ -260,16 +374,11 @@ int main() {
         setRunResults([...results]);
       }
 
-      const passedCount = results.filter(
-        (item) => item.passed
-      ).length;
+      const passedCount = results.filter((item) => item.passed).length;
 
       setSummary({
         mode: "run",
-        status:
-          passedCount === examples.length
-            ? "Accepted"
-            : "Wrong Answer",
+        status: passedCount === examples.length ? "Accepted" : "Wrong Answer",
         passed: passedCount,
         total: examples.length,
       });
@@ -327,9 +436,7 @@ int main() {
 
       setSummary({
         mode: "submit",
-        status:
-          error.response?.data?.message ||
-          "Submission Failed",
+        status: error.response?.data?.message || "Submission Failed",
         passed: 0,
         total: 0,
       });
@@ -432,16 +539,10 @@ int main() {
 
     const failed = runResults.filter(
       (item) =>
-        !item.passed &&
-        item.status !== "Not Run" &&
-        item.status !== "Pending"
+        !item.passed && item.status !== "Not Run" && item.status !== "Pending"
     ).length;
 
-    return {
-      total,
-      passed,
-      failed,
-    };
+    return { total, passed, failed };
   }, [runResults]);
 
   // --------------------------------------------------
@@ -506,9 +607,7 @@ int main() {
 
             <div className="h-4 w-px bg-white/10" />
 
-            <span className="text-xs text-slate-500">
-              Problem #{id}
-            </span>
+            <span className="text-xs text-slate-500">Problem #{id}</span>
           </div>
         </div>
 
@@ -784,207 +883,146 @@ int main() {
           {/* RIGHT - CODE EDITOR */}
           {/* ================================================= */}
 
-          <section className="flex min-h-[650px] flex-col overflow-hidden rounded-2xl border border-white/[0.07] bg-[#090e16] shadow-2xl shadow-black/20">
+          <section className="flex min-h-[650px] flex-col overflow-hidden rounded-2xl border border-white/[0.07] bg-[#141414] shadow-2xl shadow-black/20">
             {/* Editor Header */}
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.07] bg-[#0b111b] px-3 py-2.5 sm:px-4">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400">
-                  <FileCode2 size={17} />
-                </div>
+            <div className="flex h-12 items-center justify-between border-b border-white/[0.06] bg-[#141414] px-4">
+              {/* Language */}
 
-                <div>
-                  <p className="text-xs font-semibold text-slate-300">
-                    Solution
-                  </p>
+              <div className="relative">
+                <button
+                  onClick={() => setShowLanguageMenu(!showLanguageMenu)}
+                  className="flex items-center gap-2 text-sm font-medium text-slate-200 transition hover:text-white"
+                >
+                  {selectedLanguage.label}
+                  <ChevronDown size={15} />
+                </button>
 
-                  <p className="hidden text-[10px] text-slate-600 sm:block">
-                    Write your solution below
-                  </p>
-                </div>
-              </div>
+                {showLanguageMenu && (
+                  <>
+                    <button
+                      aria-label="Close menu"
+                      className="fixed inset-0 z-20 cursor-default"
+                      onClick={() => setShowLanguageMenu(false)}
+                    />
 
-              <div className="flex items-center gap-2">
-                {/* Language */}
-
-                <div className="relative">
-                  <button
-                    onClick={() =>
-                      setShowLanguageMenu(!showLanguageMenu)
-                    }
-                    className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.025] px-3 py-2 text-xs font-medium text-slate-300 transition hover:border-white/15 hover:bg-white/[0.05]"
-                  >
-                    <span className="flex h-5 min-w-5 items-center justify-center rounded bg-indigo-500/10 px-1 text-[9px] font-bold text-indigo-400">
-                      {selectedLanguage.icon}
-                    </span>
-
-                    {selectedLanguage.label}
-
-                    <ChevronDown size={13} />
-
-                  </button>
-
-                  {showLanguageMenu && (
-                    <div className="absolute right-0 top-11 z-30 w-44 overflow-hidden rounded-xl border border-white/[0.08] bg-[#101722] p-1.5 shadow-2xl">
+                    <div className="absolute left-0 top-9 z-30 w-44 overflow-hidden rounded-xl border border-white/[0.08] bg-[#1d1d1d] p-1.5 shadow-2xl">
                       {languages.map((item) => (
                         <button
                           key={item.value}
-                          onClick={() => {
-                            setLanguage(item.value);
-                            setShowLanguageMenu(false);
-                          }}
+                          onClick={() => handleLanguageChange(item.value)}
                           className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-xs transition ${
                             language === item.value
-                              ? "bg-indigo-500/10 text-indigo-300"
+                              ? "bg-white/[0.06] text-white"
                               : "text-slate-400 hover:bg-white/[0.04] hover:text-white"
                           }`}
                         >
-                          <span className="flex h-6 w-6 items-center justify-center rounded bg-white/[0.04] text-[9px] font-bold">
-                            {item.icon}
-                          </span>
-
                           {item.label}
 
                           {language === item.value && (
-                            <Check
-                              size={13}
-                              className="ml-auto"
-                            />
+                            <Check size={13} className="ml-auto" />
                           )}
                         </button>
                       ))}
                     </div>
-                  )}
-                </div>
+                  </>
+                )}
+              </div>
 
-                {/* Reset */}
+              {/* Actions */}
 
+              <div className="flex items-center gap-2">
                 <button
                   onClick={handleResetCode}
                   title="Reset code"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/[0.07] bg-white/[0.02] text-slate-500 transition hover:bg-white/[0.05] hover:text-slate-300"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-white/[0.05] hover:text-slate-300"
                 >
                   <RotateCcw size={15} />
                 </button>
 
-                {/* Copy */}
-
                 <button
                   onClick={handleCopyCode}
                   title="Copy code"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/[0.07] bg-white/[0.02] text-slate-500 transition hover:bg-white/[0.05] hover:text-slate-300"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-white/[0.05] hover:text-slate-300"
                 >
                   {copied ? (
-                    <Check
-                      size={15}
-                      className="text-emerald-400"
-                    />
+                    <Check size={15} className="text-emerald-400" />
                   ) : (
                     <Copy size={15} />
                   )}
+                </button>
+
+                <button
+                  onClick={handleRun}
+                  disabled={running || submitting}
+                  title="Run examples"
+                  className="flex h-9 w-11 items-center justify-center rounded-lg bg-[#262626] text-slate-300 transition hover:bg-[#303030] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {running ? (
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-600 border-t-white" />
+                  ) : (
+                    <Play size={15} fill="currentColor" />
+                  )}
+                </button>
+
+                <button
+                  onClick={handleSubmit}
+                  disabled={running || submitting}
+                  className="flex h-9 items-center gap-2 rounded-lg bg-[#262626] px-5 text-sm font-semibold text-emerald-400 transition hover:bg-[#303030] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {submitting ? (
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-900 border-t-emerald-400" />
+                  ) : (
+                    <Rocket size={15} />
+                  )}
+                  Submit
                 </button>
               </div>
             </div>
 
             {/* Editor */}
 
-            <div className="relative min-h-[420px] flex-1 bg-[#070b11]">
+            <div className="relative min-h-[420px] flex-1 bg-[#141414]">
               <div className="absolute inset-0 flex">
                 {/* Line numbers */}
 
-                <div className="hidden w-12 shrink-0 select-none overflow-hidden border-r border-white/[0.04] bg-[#080c12] pt-5 text-right font-mono text-[12px] leading-6 text-slate-700 sm:block">
-                  {code.split("\n").map((_, index) => (
-                    <div
-                      key={index}
-                      className="pr-3"
-                    >
+                <div
+                  ref={gutterRef}
+                  className="w-14 shrink-0 select-none overflow-hidden pt-4 text-right font-mono text-[14px] leading-7 text-slate-600"
+                >
+                  {Array.from({ length: lineCount }, (_, index) => (
+                    <div key={index} className="pr-4">
                       {index + 1}
                     </div>
                   ))}
+
+                  <div className="h-10" />
                 </div>
 
-                {/* Textarea */}
+                {/* Highlight layer + textarea */}
 
-                <textarea
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  spellCheck={false}
-                  className="h-full min-h-[420px] w-full resize-none border-0 bg-transparent p-5 font-mono text-[13px] leading-6 text-slate-300 outline-none placeholder:text-slate-700 focus:ring-0 sm:p-5"
-                  placeholder="Write your solution here..."
-                />
-              </div>
-
-              {/* Editor bottom status */}
-
-              <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between border-t border-white/[0.05] bg-[#080d14]/95 px-4 py-2 text-[10px] text-slate-600 backdrop-blur">
-                <div className="flex items-center gap-3">
-                  <span className="flex items-center gap-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                    Ready
-                  </span>
-
-                  <span>
-                    {code.split("\n").length} lines
-                  </span>
-                </div>
-
-                <span>{selectedLanguage.label}</span>
-              </div>
-            </div>
-
-            {/* ================================================= */}
-            {/* ACTION BAR */}
-            {/* ================================================= */}
-
-            <div className="border-t border-white/[0.07] bg-[#0b111b] p-3 sm:p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div className="hidden items-center gap-2 text-xs text-slate-600 sm:flex">
-                  <Zap size={13} />
-                  Run examples before submitting
-                </div>
-
-                <div className="ml-auto flex w-full gap-2 sm:w-auto">
-                  <button
-                    onClick={handleRun}
-                    disabled={running || submitting}
-                    className="group flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-sm font-semibold text-slate-300 transition hover:bg-white/[0.07] hover:text-white disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
+                <div className="relative min-w-0 flex-1">
+                  <pre
+                    ref={preRef}
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 m-0 overflow-hidden whitespace-pre p-4 pl-2 font-mono text-[14px] leading-7 text-slate-200"
                   >
-                    {running ? (
-                      <>
-                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-600 border-t-white" />
-                        Running
-                      </>
-                    ) : (
-                      <>
-                        <Play
-                          size={15}
-                          className="transition group-hover:scale-110"
-                        />
-                        Run
-                      </>
-                    )}
-                  </button>
+                    {highlightCode(code, language)}
+                    {"\n"}
+                  </pre>
 
-                  <button
-                    onClick={handleSubmit}
-                    disabled={running || submitting}
-                    className="group flex flex-1 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500 hover:shadow-indigo-500/25 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
-                  >
-                    {submitting ? (
-                      <>
-                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                        Submitting
-                      </>
-                    ) : (
-                      <>
-                        <Send
-                          size={15}
-                          className="transition group-hover:translate-x-0.5"
-                        />
-                        Submit
-                      </>
-                    )}
-                  </button>
+                  <textarea
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    onScroll={handleEditorScroll}
+                    onKeyDown={handleEditorKeyDown}
+                    spellCheck={false}
+                    autoCapitalize="off"
+                    autoCorrect="off"
+                    wrap="off"
+                    className="absolute inset-0 h-full w-full resize-none overflow-auto whitespace-pre border-0 bg-transparent p-4 pl-2 font-mono text-[14px] leading-7 text-transparent caret-white outline-none selection:bg-indigo-500/30 focus:ring-0"
+                    placeholder="Write your solution here..."
+                  />
                 </div>
               </div>
             </div>
@@ -993,7 +1031,7 @@ int main() {
             {/* RESULTS */}
             {/* ================================================= */}
 
-            <div className="border-t border-white/[0.07] bg-[#090e16]">
+            <div className="border-t border-white/[0.07] bg-[#141414]">
               {/* Result tabs */}
 
               <div className="flex items-center justify-between border-b border-white/[0.06] px-4">
@@ -1063,10 +1101,7 @@ int main() {
                             </div>
                           </div>
 
-                          <ChevronRight
-                            size={15}
-                            className="text-slate-700"
-                          />
+                          <ChevronRight size={15} className="text-slate-700" />
                         </div>
                       ))
                     ) : (
@@ -1089,10 +1124,7 @@ int main() {
                     {runResults.length === 0 && !summary && (
                       <div className="flex min-h-[180px] flex-col items-center justify-center text-center">
                         <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.02]">
-                          <Terminal
-                            size={21}
-                            className="text-slate-700"
-                          />
+                          <Terminal size={21} className="text-slate-700" />
                         </div>
 
                         <p className="text-sm font-medium text-slate-500">
@@ -1147,7 +1179,8 @@ int main() {
                               </p>
 
                               <p className="mt-0.5 text-xs text-slate-500">
-                                {summary.passed} of {summary.total} test cases passed
+                                {summary.passed} of {summary.total} test cases
+                                passed
                               </p>
                             </div>
                           </div>
@@ -1308,11 +1341,7 @@ int main() {
                                     <pre className="whitespace-pre-wrap font-mono text-[11px] leading-5 text-rose-300/80">
                                       {typeof result.error === "string"
                                         ? result.error
-                                        : JSON.stringify(
-                                            result.error,
-                                            null,
-                                            2
-                                          )}
+                                        : JSON.stringify(result.error, null, 2)}
                                     </pre>
                                   </div>
                                 </div>
