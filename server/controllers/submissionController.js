@@ -2,6 +2,7 @@ import Submission from "../models/Submission.js";
 import Problem from "../models/Problem.js";
 import User from "../models/User.js";
 import { executeCode } from "../services/jdoodleService.js";
+import { createNotification } from "../services/notificationService.js";
 
 export const createSubmission = async (req, res) => {
   try {
@@ -205,6 +206,8 @@ export const createSubmission = async (req, res) => {
 
         today.setHours(0, 0, 0, 0);
 
+        const previousStreak = user.streak;
+
         if (!user.lastSubmissionDate) {
           user.streak = 1;
         } else {
@@ -238,6 +241,33 @@ export const createSubmission = async (req, res) => {
         await user.save();
 
         updatedStreak = user.streak;
+
+        // ---------- NOTIFICATIONS ----------
+
+        if (!alreadySolved) {
+          await createNotification({
+            user: user._id,
+            type: "success",
+            title: "Problem solved! ✅",
+            message: `You solved "${problem.title}" (${problem.difficulty}).`,
+            link: `/problems/${problem._id}`,
+          });
+        }
+
+        const streakMilestones = [3, 7, 14, 30, 50, 100];
+
+        if (
+          user.streak !== previousStreak &&
+          streakMilestones.includes(user.streak)
+        ) {
+          await createNotification({
+            user: user._id,
+            type: "streak",
+            title: `${user.streak} day streak! 🔥`,
+            message: "You're on fire. Keep the streak going!",
+            link: "/problems",
+          });
+        }
       }
     }
 

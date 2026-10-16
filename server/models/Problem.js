@@ -41,6 +41,18 @@ const problemSchema = new mongoose.Schema(
         type: String,
       },
     ],
+    hints: [
+      {
+        type: String,
+      },
+    ],
+    
+    companyTags: [{ type: String }],
+
+    frequency: { type: Number, default: 0 },
+
+    acceptance: { type: Number },
+
     starterCode: {
       type: String,
       default: "",

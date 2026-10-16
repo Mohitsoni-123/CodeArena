@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import UserMenu from "./UserMenu";
 
 const Navbar = () => {
   const { token, user, logout } = useAuth();
@@ -257,21 +258,9 @@ const Navbar = () => {
                   {/* User */}
 
                   {token ? (
-                    <>
-                      <div
-                        title={user?.name || "User"}
-                        className="ml-2 flex h-9 w-9 items-center justify-center rounded-xl border border-violet-400/20 bg-gradient-to-br from-violet-600 to-indigo-600 text-sm font-black text-white shadow-lg shadow-violet-900/20"
-                      >
-                        {user?.name?.charAt(0).toUpperCase() || "U"}
-                      </div>
-
-                      <button
-                        onClick={handleLogout}
-                        className="ml-1 rounded-xl border border-white/10 px-3 py-2 text-sm font-bold text-slate-400 transition-all duration-200 hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400"
-                      >
-                        Logout
-                      </button>
-                    </>
+                    <div className="ml-2">
+                      <UserMenu user={user} onLogout={handleLogout} />
+                    </div>
                   ) : (
                     <>
                       <NavLink
@@ -469,6 +458,24 @@ const Navbar = () => {
                         >
                           <span className="text-violet-400">◉</span>
                           My Submissions
+                        </NavLink>
+
+                        <NavLink
+                          to="/profile"
+                          onClick={closeMobile}
+                          className={mobileNavLinkClass}
+                        >
+                          <span className="text-violet-400">☺</span>
+                          Profile
+                        </NavLink>
+
+                        <NavLink
+                          to="/notifications"
+                          onClick={closeMobile}
+                          className={mobileNavLinkClass}
+                        >
+                          <span className="text-violet-400">🔔</span>
+                          Notifications
                         </NavLink>
 
                         <button

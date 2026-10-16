@@ -2,6 +2,7 @@ import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import { createNotification } from "../services/notificationService.js";
 
 // ===============================
 // REGISTER
@@ -40,6 +41,15 @@ const register = async (req, res) => {
       name: name.trim(),
       email: normalizedEmail,
       password: hashedPassword,
+    });
+
+    // Welcome notification
+    await createNotification({
+      user: user._id,
+      type: "success",
+      title: "Welcome to CodeArena 🎉",
+      message: "Start solving problems and build your daily streak.",
+      link: "/problems",
     });
 
     res.status(201).json({
@@ -131,8 +141,9 @@ export const login = async (req, res) => {
 // ===============================
 export const getMe = async (req, res) => {
   try {
+    // password aur reset wale secret fields client ko nahi bhejte
     const user = await User.findById(req.user.id).select(
-      "-password"
+      "-password -resetOtp -resetOtpExpire -resetOtpAttempts -resetOtpVerified -resetToken -resetTokenExpire"
     );
 
     if (!user) {

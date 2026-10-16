@@ -28,6 +28,9 @@ import NotFound from "./pages/NotFound";
 
 import Footer from "./components/Footer";
 
+import Profile from "./pages/Profile";
+import Notifications from "./pages/Notifications";
+
 const App = () => {
   return (
     <BrowserRouter>
@@ -101,6 +104,9 @@ const App = () => {
             </AdminRoute>
           }
         />
+
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/notifications" element={<Notifications />} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>

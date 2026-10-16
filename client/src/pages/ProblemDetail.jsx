@@ -19,6 +19,8 @@ import {
   X,
 } from "lucide-react";
 import api from "../services/api";
+import ProblemStatement from "../components/ProblemStatement";
+import ResultsPanel from "../components/ResultsPanel";
 
 // --------------------------------------------------
 // STARTER CODE
@@ -50,6 +52,28 @@ const getStarter = (problem, lang) =>
   lang === "cpp" && problem?.starterCode
     ? problem.starterCode
     : STARTERS[lang] || "";
+
+// --------------------------------------------------
+// CODE DRAFT (har problem + language ka code browser me save hota hai)
+// --------------------------------------------------
+
+const draftKey = (problemId, lang) => `code-draft:${problemId}:${lang}`;
+
+const loadDraft = (problemId, lang) => {
+  try {
+    return localStorage.getItem(draftKey(problemId, lang));
+  } catch {
+    return null;
+  }
+};
+
+const saveDraft = (problemId, lang, value) => {
+  try {
+    localStorage.setItem(draftKey(problemId, lang), value);
+  } catch {
+    /* storage full / blocked */
+  }
+};
 
 // --------------------------------------------------
 // SYNTAX HIGHLIGHTING
@@ -94,7 +118,7 @@ const highlightCode = (code, lang) => {
 
   const regex = new RegExp(
     `(${comment})|(${pre})|("(?:\\\\.|[^"\\\\\\n])*"|'(?:\\\\.|[^'\\\\\\n])*')|(\\b\\d+(?:\\.\\d+)?\\b)|(\\b[A-Za-z_]\\w*\\b)`,
-    "gm"
+    "gm",
   );
 
   const nodes = [];
@@ -115,8 +139,7 @@ const highlightCode = (code, lang) => {
     else if (word) {
       if (keywords.has(word)) cls = tokenColors.keyword;
       else if (types.has(word)) cls = tokenColors.type;
-      else if (code[match.index + text.length] === "(")
-        cls = tokenColors.fn;
+      else if (code[match.index + text.length] === "(") cls = tokenColors.fn;
     }
 
     nodes.push(
@@ -126,7 +149,7 @@ const highlightCode = (code, lang) => {
         </span>
       ) : (
         text
-      )
+      ),
     );
 
     last = match.index + text.length;
@@ -150,7 +173,7 @@ const ProblemDetail = () => {
   const [submitting, setSubmitting] = useState(false);
 
   const [activeTab, setActiveTab] = useState("description");
-  const [resultTab, setResultTab] = useState("output");
+  const [resultTab, setResultTab] = useState("sample");
 
   const [runResults, setRunResults] = useState([]);
   const [summary, setSummary] = useState(null);
@@ -161,6 +184,25 @@ const ProblemDetail = () => {
   const gutterRef = useRef(null);
   const preRef = useRef(null);
 
+  // pehle se submit kiya hua code + autosave ke liye
+  const submissionsRef = useRef([]);
+  const [codeReady, setCodeReady] = useState(false);
+
+  // Priority: 1) saved draft  2) last submitted code  3) starter code
+  const getInitialCode = (data, lang) => {
+    const draft = loadDraft(id, lang);
+
+    if (draft !== null) return draft;
+
+    const last = submissionsRef.current.find((item) => item.language === lang);
+
+    if (last?.code) return last.code;
+
+    return getStarter(data, lang);
+  };
+
+  const [solved, setSolved] = useState(false);
+
   // --------------------------------------------------
   // FETCH PROBLEM
   // --------------------------------------------------
@@ -169,13 +211,29 @@ const ProblemDetail = () => {
     const fetchProblem = async () => {
       try {
         setLoading(true);
+        setCodeReady(false);
 
         const response = await api.get(`/problems/${id}`);
 
         const data = response.data?.problem || response.data;
 
         setProblem(data);
-        setCode(getStarter(data, "cpp"));
+
+        // is user ki is problem ki purani submissions (code wapas lane ke liye)
+        submissionsRef.current = [];
+
+        if (localStorage.getItem("token")) {
+          try {
+            const res = await api.get(`/submissions/problem/${id}`);
+
+            submissionsRef.current = res.data?.submissions || [];
+          } catch (err) {
+            console.error("Failed to fetch previous submissions:", err);
+          }
+        }
+
+        setCode(getInitialCode(data, "cpp"));
+        setCodeReady(true);
       } catch (error) {
         console.error("Failed to fetch problem:", error);
 
@@ -189,6 +247,38 @@ const ProblemDetail = () => {
 
     fetchProblem();
   }, [id, navigate]);
+
+  useEffect(() => {
+    const checkSolved = async () => {
+      try {
+        const res = await api.get("/submissions/my");
+        const list = res.data?.submissions || [];
+        setSolved(
+          list.some((s) => {
+            const pid = s.problem?._id || s.problem?.id || s.problem;
+            return s.status === "Accepted" && String(pid) === String(id);
+          }),
+        );
+      } catch {
+        setSolved(false);
+      }
+    };
+    checkSolved();
+  }, [id]);
+
+  // --------------------------------------------------
+  // AUTOSAVE (typing rukne ke 0.4 sec baad)
+  // --------------------------------------------------
+
+  useEffect(() => {
+    if (!codeReady) return;
+
+    const timer = setTimeout(() => {
+      saveDraft(id, language, code);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [code, language, id, codeReady]);
 
   // --------------------------------------------------
   // LANGUAGE DATA
@@ -256,11 +346,15 @@ const ProblemDetail = () => {
   };
 
   const handleLanguageChange = (nextLang) => {
-    // If the user has not edited the code, swap in the new language's starter
-    if (code === getStarter(problem, language)) {
-      setCode(getStarter(problem, nextLang));
+    if (nextLang === language) {
+      setShowLanguageMenu(false);
+      return;
     }
 
+    // abhi wali language ka code save karo, phir nayi language ka code kholo
+    saveDraft(id, language, code);
+
+    setCode(getInitialCode(problem, nextLang));
     setLanguage(nextLang);
     setShowLanguageMenu(false);
   };
@@ -307,12 +401,10 @@ const ProblemDetail = () => {
       setRunning(true);
       setSummary(null);
       setRunResults([]);
-      setResultTab("output");
+      setResultTab("sample");
       setActiveTab("description");
 
-      const examples = Array.isArray(problem.example)
-        ? problem.example
-        : [];
+      const examples = Array.isArray(problem.example) ? problem.example : [];
 
       if (examples.length === 0) {
         setSummary({
@@ -407,7 +499,7 @@ const ProblemDetail = () => {
       setSubmitting(true);
       setSummary(null);
       setRunResults([]);
-      setResultTab("output");
+      setResultTab("hidden");
 
       const response = await api.post("/submissions", {
         problemId: id,
@@ -416,6 +508,8 @@ const ProblemDetail = () => {
       });
 
       const data = response.data;
+
+      if (data.status === "Accepted") setSolved(true);
 
       const results = Array.isArray(data.testCaseResults)
         ? data.testCaseResults
@@ -534,12 +628,12 @@ const ProblemDetail = () => {
     const total = runResults.length;
 
     const passed = runResults.filter(
-      (item) => item.passed || item.status === "Accepted"
+      (item) => item.passed || item.status === "Accepted",
     ).length;
 
     const failed = runResults.filter(
       (item) =>
-        !item.passed && item.status !== "Not Run" && item.status !== "Pending"
+        !item.passed && item.status !== "Not Run" && item.status !== "Pending",
     ).length;
 
     return { total, passed, failed };
@@ -620,264 +714,12 @@ const ProblemDetail = () => {
           {/* LEFT - PROBLEM */}
           {/* ================================================= */}
 
-          <section className="flex min-h-[650px] flex-col overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0b111b] shadow-2xl shadow-black/20">
-            {/* Problem Header */}
-
-            <div className="border-b border-white/[0.07] px-5 py-5 sm:px-6">
-              <div className="mb-3 flex flex-wrap items-center gap-2">
-                <span
-                  className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-semibold ${difficulty.bg} ${difficulty.border} ${difficulty.text}`}
-                >
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full ${difficulty.dot}`}
-                  />
-                  {problem.difficulty}
-                </span>
-
-                {problem.topics?.map((topic) => (
-                  <span
-                    key={topic}
-                    className="rounded-full border border-white/[0.07] bg-white/[0.025] px-2.5 py-1 text-xs text-slate-400"
-                  >
-                    {topic}
-                  </span>
-                ))}
-              </div>
-
-              <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-                {problem.title}
-              </h1>
-
-              <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
-                <Sparkles size={13} className="text-indigo-400" />
-                Master this problem and improve your problem-solving skills.
-              </div>
-            </div>
-
-            {/* Problem Tabs */}
-
-            <div className="flex border-b border-white/[0.07] px-5 sm:px-6">
-              <button
-                onClick={() => setActiveTab("description")}
-                className={`relative px-1 py-3.5 text-sm font-medium transition ${
-                  activeTab === "description"
-                    ? "text-white"
-                    : "text-slate-500 hover:text-slate-300"
-                }`}
-              >
-                Description
-
-                {activeTab === "description" && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-indigo-500" />
-                )}
-              </button>
-
-              <button
-                onClick={() => setActiveTab("examples")}
-                className={`relative ml-6 px-1 py-3.5 text-sm font-medium transition ${
-                  activeTab === "examples"
-                    ? "text-white"
-                    : "text-slate-500 hover:text-slate-300"
-                }`}
-              >
-                Examples
-
-                {activeTab === "examples" && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-indigo-500" />
-                )}
-              </button>
-            </div>
-
-            {/* Problem Content */}
-
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6 sm:px-6">
-              {activeTab === "description" ? (
-                <div className="space-y-7">
-                  {/* Description */}
-
-                  <div>
-                    <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">
-                      Problem
-                    </h2>
-
-                    <p className="whitespace-pre-line text-[15px] leading-7 text-slate-300">
-                      {problem.description}
-                    </p>
-                  </div>
-
-                  {/* Examples preview */}
-
-                  {problem.example?.length > 0 && (
-                    <div>
-                      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">
-                        Examples
-                      </h2>
-
-                      <div className="space-y-3">
-                        {problem.example.slice(0, 2).map((example, index) => (
-                          <div
-                            key={index}
-                            className="overflow-hidden rounded-xl border border-white/[0.07] bg-[#080d15]"
-                          >
-                            <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
-                              <span className="text-xs font-semibold text-slate-400">
-                                Example {index + 1}
-                              </span>
-
-                              <span className="rounded-md bg-indigo-500/10 px-2 py-1 text-[10px] font-medium text-indigo-400">
-                                Sample
-                              </span>
-                            </div>
-
-                            <div className="grid divide-y divide-white/[0.06] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
-                              <div className="p-4">
-                                <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-600">
-                                  Input
-                                </p>
-
-                                <pre className="overflow-x-auto whitespace-pre-wrap rounded-lg bg-black/30 p-3 font-mono text-xs leading-6 text-slate-300">
-                                  {example.input}
-                                </pre>
-                              </div>
-
-                              <div className="p-4">
-                                <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-600">
-                                  Output
-                                </p>
-
-                                <pre className="overflow-x-auto whitespace-pre-wrap rounded-lg bg-black/30 p-3 font-mono text-xs leading-6 text-emerald-300">
-                                  {example.output}
-                                </pre>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Constraints */}
-
-                  {problem.constraints && (
-                    <div>
-                      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">
-                        Constraints
-                      </h2>
-
-                      <div className="rounded-xl border border-white/[0.07] bg-black/20 p-4">
-                        <pre className="whitespace-pre-wrap font-mono text-xs leading-7 text-slate-400">
-                          {problem.constraints}
-                        </pre>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Topics */}
-
-                  {problem.topics?.length > 0 && (
-                    <div>
-                      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">
-                        Topics
-                      </h2>
-
-                      <div className="flex flex-wrap gap-2">
-                        {problem.topics.map((topic) => (
-                          <span
-                            key={topic}
-                            className="rounded-lg border border-indigo-500/10 bg-indigo-500/5 px-3 py-2 text-xs text-indigo-300"
-                          >
-                            {topic}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="mb-5">
-                    <h2 className="text-lg font-semibold text-white">
-                      Sample Test Cases
-                    </h2>
-
-                    <p className="mt-1 text-sm text-slate-500">
-                      Run your code against these examples before submitting.
-                    </p>
-                  </div>
-
-                  {problem.example?.length > 0 ? (
-                    problem.example.map((example, index) => (
-                      <div
-                        key={index}
-                        className="overflow-hidden rounded-xl border border-white/[0.07] bg-[#080d15]"
-                      >
-                        <div className="flex items-center justify-between border-b border-white/[0.07] px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-indigo-500/10 text-[10px] font-bold text-indigo-400">
-                              {index + 1}
-                            </div>
-
-                            <span className="text-sm font-medium text-slate-300">
-                              Example {index + 1}
-                            </span>
-                          </div>
-
-                          <span className="text-[10px] font-medium uppercase tracking-wider text-slate-600">
-                            Public
-                          </span>
-                        </div>
-
-                        <div className="grid sm:grid-cols-2">
-                          <div className="border-b border-white/[0.06] p-4 sm:border-b-0 sm:border-r">
-                            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-600">
-                              Input
-                            </p>
-
-                            <pre className="min-h-20 whitespace-pre-wrap rounded-lg bg-black/30 p-3 font-mono text-xs leading-6 text-slate-300">
-                              {example.input}
-                            </pre>
-                          </div>
-
-                          <div className="p-4">
-                            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-600">
-                              Expected Output
-                            </p>
-
-                            <pre className="min-h-20 whitespace-pre-wrap rounded-lg bg-black/30 p-3 font-mono text-xs leading-6 text-emerald-300">
-                              {example.output}
-                            </pre>
-                          </div>
-                        </div>
-
-                        {example.explanation && (
-                          <div className="border-t border-white/[0.06] px-4 py-4">
-                            <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-600">
-                              Explanation
-                            </p>
-
-                            <p className="text-xs leading-6 text-slate-400">
-                              {example.explanation}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="rounded-xl border border-dashed border-white/10 p-8 text-center">
-                      <Terminal
-                        size={28}
-                        className="mx-auto mb-3 text-slate-700"
-                      />
-
-                      <p className="text-sm text-slate-500">
-                        No example test cases available.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </section>
+          <ProblemStatement
+            problem={problem}
+            solved={solved}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+          />
 
           {/* ================================================= */}
           {/* RIGHT - CODE EDITOR */}
@@ -1031,330 +873,15 @@ const ProblemDetail = () => {
             {/* RESULTS */}
             {/* ================================================= */}
 
-            <div className="border-t border-white/[0.07] bg-[#141414]">
-              {/* Result tabs */}
-
-              <div className="flex items-center justify-between border-b border-white/[0.06] px-4">
-                <div className="flex">
-                  <button
-                    onClick={() => setResultTab("output")}
-                    className={`relative px-1 py-3 text-xs font-semibold ${
-                      resultTab === "output"
-                        ? "text-white"
-                        : "text-slate-600 hover:text-slate-400"
-                    }`}
-                  >
-                    Output
-
-                    {resultTab === "output" && (
-                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500" />
-                    )}
-                  </button>
-
-                  <button
-                    onClick={() => setResultTab("tests")}
-                    className={`relative ml-5 px-1 py-3 text-xs font-semibold ${
-                      resultTab === "tests"
-                        ? "text-white"
-                        : "text-slate-600 hover:text-slate-400"
-                    }`}
-                  >
-                    Test Cases
-
-                    {resultTab === "tests" && (
-                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500" />
-                    )}
-                  </button>
-                </div>
-
-                {runResults.length > 0 && (
-                  <span className="text-[10px] text-slate-600">
-                    {resultStats.passed}/{resultStats.total} passed
-                  </span>
-                )}
-              </div>
-
-              {/* Results content */}
-
-              <div className="max-h-[390px] min-h-[210px] overflow-y-auto p-4">
-                {resultTab === "tests" ? (
-                  <div className="space-y-2">
-                    {problem.example?.length > 0 ? (
-                      problem.example.map((example, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.015] px-4 py-3"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/10 text-[10px] font-bold text-indigo-400">
-                              {index + 1}
-                            </div>
-
-                            <div>
-                              <p className="text-xs font-medium text-slate-300">
-                                Example {index + 1}
-                              </p>
-
-                              <p className="mt-0.5 text-[10px] text-slate-600">
-                                Public test case
-                              </p>
-                            </div>
-                          </div>
-
-                          <ChevronRight size={15} className="text-slate-700" />
-                        </div>
-                      ))
-                    ) : (
-                      <div className="py-12 text-center">
-                        <Terminal
-                          size={28}
-                          className="mx-auto mb-3 text-slate-700"
-                        />
-
-                        <p className="text-xs text-slate-600">
-                          No test cases available.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <>
-                    {/* Empty */}
-
-                    {runResults.length === 0 && !summary && (
-                      <div className="flex min-h-[180px] flex-col items-center justify-center text-center">
-                        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.02]">
-                          <Terminal size={21} className="text-slate-700" />
-                        </div>
-
-                        <p className="text-sm font-medium text-slate-500">
-                          No output yet
-                        </p>
-
-                        <p className="mt-1 max-w-xs text-xs leading-5 text-slate-700">
-                          Run your code to test it against the examples.
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Summary */}
-
-                    {summary && (
-                      <div
-                        className={`mb-4 overflow-hidden rounded-xl border ${
-                          summary.status === "Accepted"
-                            ? "border-emerald-400/15 bg-emerald-400/[0.035]"
-                            : "border-rose-400/15 bg-rose-400/[0.035]"
-                        }`}
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-4 p-4">
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-                                summary.status === "Accepted"
-                                  ? "bg-emerald-400/10 text-emerald-400"
-                                  : "bg-rose-400/10 text-rose-400"
-                              }`}
-                            >
-                              {summary.status === "Accepted" ? (
-                                <Check size={20} />
-                              ) : (
-                                <CircleAlert size={20} />
-                              )}
-                            </div>
-
-                            <div>
-                              <p
-                                className={`text-sm font-bold ${
-                                  summary.status === "Accepted"
-                                    ? "text-emerald-400"
-                                    : "text-rose-400"
-                                }`}
-                              >
-                                {summary.mode === "run"
-                                  ? summary.status === "Accepted"
-                                    ? "All Examples Passed"
-                                    : "Some Examples Failed"
-                                  : summary.status}
-                              </p>
-
-                              <p className="mt-0.5 text-xs text-slate-500">
-                                {summary.passed} of {summary.total} test cases
-                                passed
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            {summary.runtime !== undefined && (
-                              <div className="rounded-lg border border-white/[0.06] bg-black/20 px-3 py-2">
-                                <div className="flex items-center gap-1.5 text-[10px] text-slate-600">
-                                  <Clock3 size={11} />
-                                  Runtime
-                                </div>
-
-                                <p className="mt-1 text-xs font-semibold text-slate-400">
-                                  {summary.runtime} ms
-                                </p>
-                              </div>
-                            )}
-
-                            {summary.memory !== undefined && (
-                              <div className="rounded-lg border border-white/[0.06] bg-black/20 px-3 py-2">
-                                <div className="flex items-center gap-1.5 text-[10px] text-slate-600">
-                                  <MemoryStick size={11} />
-                                  Memory
-                                </div>
-
-                                <p className="mt-1 text-xs font-semibold text-slate-400">
-                                  {summary.memory}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Individual results */}
-
-                    {runResults.length > 0 && (
-                      <div className="space-y-3">
-                        {runResults.map((result, index) => {
-                          const status = getStatusConfig(result);
-                          const StatusIcon = status.icon;
-
-                          const isHidden =
-                            result.input === "Hidden Test Case" ||
-                            result.expectedOutput === "Hidden" ||
-                            result.actualOutput === "Hidden";
-
-                          return (
-                            <div
-                              key={`${result.type || "Test"}-${result.number || index}`}
-                              className={`overflow-hidden rounded-xl border ${status.border} bg-[#0b111b]`}
-                            >
-                              {/* Result header */}
-
-                              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.05] px-4 py-3">
-                                <div className="flex items-center gap-3">
-                                  <div
-                                    className={`flex h-8 w-8 items-center justify-center rounded-lg ${status.iconBg} ${status.text}`}
-                                  >
-                                    <StatusIcon size={15} />
-                                  </div>
-
-                                  <div>
-                                    <div className="flex items-center gap-2">
-                                      <p className="text-xs font-semibold text-slate-300">
-                                        {result.type || "Test Case"}{" "}
-                                        {result.number || index + 1}
-                                      </p>
-
-                                      {isHidden && (
-                                        <span className="flex items-center gap-1 rounded-md bg-slate-500/10 px-1.5 py-0.5 text-[9px] font-medium text-slate-500">
-                                          <Lock size={9} />
-                                          Hidden
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <span
-                                  className={`rounded-md px-2 py-1 text-[10px] font-semibold ${status.bg} ${status.text}`}
-                                >
-                                  {status.label}
-                                </span>
-                              </div>
-
-                              {/* Result body */}
-
-                              <div className="grid sm:grid-cols-3">
-                                {/* Input */}
-
-                                <div className="border-b border-white/[0.05] p-4 sm:border-b-0 sm:border-r">
-                                  <p className="mb-2 text-[9px] font-bold uppercase tracking-wider text-slate-600">
-                                    Input
-                                  </p>
-
-                                  <pre
-                                    className={`max-h-28 overflow-auto whitespace-pre-wrap rounded-lg bg-black/25 p-3 font-mono text-[11px] leading-5 ${
-                                      isHidden
-                                        ? "text-slate-600"
-                                        : "text-slate-400"
-                                    }`}
-                                  >
-                                    {result.input || ""}
-                                  </pre>
-                                </div>
-
-                                {/* Expected */}
-
-                                <div className="border-b border-white/[0.05] p-4 sm:border-b-0 sm:border-r">
-                                  <p className="mb-2 text-[9px] font-bold uppercase tracking-wider text-slate-600">
-                                    Expected
-                                  </p>
-
-                                  <pre
-                                    className={`max-h-28 overflow-auto whitespace-pre-wrap rounded-lg bg-black/25 p-3 font-mono text-[11px] leading-5 ${
-                                      isHidden
-                                        ? "text-slate-600"
-                                        : "text-emerald-300/80"
-                                    }`}
-                                  >
-                                    {result.expectedOutput || ""}
-                                  </pre>
-                                </div>
-
-                                {/* Actual */}
-
-                                <div className="p-4">
-                                  <p className="mb-2 text-[9px] font-bold uppercase tracking-wider text-slate-600">
-                                    Actual
-                                  </p>
-
-                                  <pre
-                                    className={`max-h-28 overflow-auto whitespace-pre-wrap rounded-lg bg-black/25 p-3 font-mono text-[11px] leading-5 ${
-                                      isHidden
-                                        ? "text-slate-600"
-                                        : result.passed
-                                        ? "text-emerald-300/80"
-                                        : "text-rose-300/80"
-                                    }`}
-                                  >
-                                    {result.actualOutput || ""}
-                                  </pre>
-                                </div>
-                              </div>
-
-                              {/* Error */}
-
-                              {result.error && (
-                                <div className="border-t border-white/[0.05] bg-rose-500/[0.025] px-4 py-3">
-                                  <div className="flex items-start gap-2">
-                                    <CircleAlert
-                                      size={14}
-                                      className="mt-0.5 shrink-0 text-rose-400"
-                                    />
-
-                                    <pre className="whitespace-pre-wrap font-mono text-[11px] leading-5 text-rose-300/80">
-                                      {typeof result.error === "string"
-                                        ? result.error
-                                        : JSON.stringify(result.error, null, 2)}
-                                    </pre>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
+            <ResultsPanel
+              examples={problem.example || []}
+              runResults={runResults}
+              summary={summary}
+              running={running}
+              submitting={submitting}
+              tab={resultTab}
+              setTab={setResultTab}
+            />
           </section>
         </div>
       </main>
