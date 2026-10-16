@@ -68,6 +68,7 @@ const EditProblem = () => {
     difficulty: "Easy",
     topics: "",
     constraints: "",
+    hints: "",
     starterCode: "",
   });
 
@@ -97,6 +98,7 @@ const EditProblem = () => {
           difficulty: problem.difficulty || "Easy",
           topics: problem.topics?.join(", ") || "",
           constraints: problem.constraints?.join("\n") || "",
+          hints: problem.hints?.join("\n") || "",
           starterCode: problem.starterCode || "",
         });
 
@@ -264,6 +266,11 @@ const EditProblem = () => {
         constraints: formData.constraints
           .split("\n")
           .map((constraint) => constraint.trim())
+          .filter(Boolean),
+
+        hints: formData.hints
+          .split("\n")
+          .map((hint) => hint.trim())
           .filter(Boolean),
 
         starterCode: formData.starterCode,
@@ -501,6 +508,26 @@ const EditProblem = () => {
 
                 <p className="mt-2 text-xs text-slate-600">
                   Write each constraint on a new line.
+                </p>
+              </div>
+
+              <div>
+                <InputLabel>Hints</InputLabel>
+
+                <textarea
+                  name="hints"
+                  value={formData.hints}
+                  onChange={handleChange}
+                  rows={4}
+                  placeholder={
+                    "Try a brute force approach first.\nCan a hash map help you avoid the second loop?"
+                  }
+                  className={`${inputClass} resize-y leading-6`}
+                />
+
+                <p className="mt-2 text-xs text-slate-600">
+                  Write each hint on a new line (optional). Users see them as
+                  Hint 1, Hint 2, ...
                 </p>
               </div>
             </div>

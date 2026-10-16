@@ -29,6 +29,7 @@ const CreateProblem = () => {
     difficulty: "Easy",
     topics: "",
     constraints: "",
+    hints: "",
     starterCode: "",
   });
 
@@ -185,6 +186,11 @@ const CreateProblem = () => {
         constraints: formData.constraints
           .split("\n")
           .map((constraint) => constraint.trim())
+          .filter(Boolean),
+
+        hints: formData.hints
+          .split("\n")
+          .map((hint) => hint.trim())
           .filter(Boolean),
 
         starterCode: formData.starterCode,
@@ -492,6 +498,28 @@ const CreateProblem = () => {
 
                 <p className="mt-2 text-[11px] text-slate-600">
                   Write each constraint on a separate line.
+                </p>
+              </div>
+
+              {/* Hints */}
+              <div>
+                <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Hints
+                </label>
+
+                <textarea
+                  name="hints"
+                  value={formData.hints}
+                  onChange={handleChange}
+                  placeholder={`Try a brute force approach first.
+Can a hash map help you avoid the second loop?`}
+                  rows={4}
+                  className={textareaClass}
+                />
+
+                <p className="mt-2 text-[11px] text-slate-600">
+                  Write each hint on a separate line (optional). Users see them
+                  as Hint 1, Hint 2, ...
                 </p>
               </div>
             </div>

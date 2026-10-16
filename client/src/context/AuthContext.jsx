@@ -32,6 +32,17 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     setUser(null);
   };
+
+  // user ke kuch fields badalne ke liye (jaise Profile me naam badalna)
+  const updateUser = (changes) => {
+    setUser((prev) => {
+      const next = { ...prev, ...changes };
+
+      localStorage.setItem("user", JSON.stringify(next));
+
+      return next;
+    });
+  };
   useEffect(() => {
     const verifyUser = async () => {
         const storedToken = localStorage.getItem("token");
@@ -73,6 +84,7 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated,
         login,
         logout,
+        updateUser,
       }}
     >
       {children}
